@@ -20,5 +20,9 @@ public class AchievementEntity {
     @Column(columnDefinition = "TEXT")
     private String descText;
 
+    private String issuer;
+    private String date;
+    private String link;
+
     private Integer sortOrder;
 }

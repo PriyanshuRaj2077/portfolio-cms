@@ -1,34 +1,12 @@
 /* ==========================================================================
-   NAVIGATION & INTERACTION CONTROLLER
+   NAVIGATION & MAC-STYLE SIDEBAR CONTROLLER
    ========================================================================== */
 
 const Navigation = {
   init() {
-    this.setupMobileMenu();
     this.setupSmoothScroll();
     this.setupScrollSpy();
-  },
-
-  setupMobileMenu() {
-    const toggleBtn = document.querySelector('.mobile-nav-toggle');
-    const navLinks = document.querySelector('.nav-links');
-
-    if (toggleBtn && navLinks) {
-      toggleBtn.addEventListener('click', () => {
-        const isOpen = navLinks.classList.toggle('open');
-        toggleBtn.setAttribute('aria-expanded', isOpen);
-        toggleBtn.innerHTML = isOpen ? '✕' : '☰';
-      });
-
-      // Close menu when link is clicked
-      navLinks.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-          navLinks.classList.remove('open');
-          toggleBtn.setAttribute('aria-expanded', 'false');
-          toggleBtn.innerHTML = '☰';
-        });
-      });
-    }
+    this.setupMobileTapReveal();
   },
 
   setupSmoothScroll() {
@@ -42,7 +20,7 @@ const Navigation = {
       const targetElem = document.querySelector(targetId);
       if (targetElem) {
         e.preventDefault();
-        const headerOffset = 80;
+        const headerOffset = window.innerWidth <= 768 ? 64 : 40;
         const elementPosition = targetElem.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
@@ -56,13 +34,13 @@ const Navigation = {
 
   setupScrollSpy() {
     const sections = document.querySelectorAll('section[id]');
-    const navLinks = document.querySelectorAll('.nav-link');
+    const navLinks = document.querySelectorAll('.sidebar-link');
 
     if (!sections.length || !navLinks.length) return;
 
     window.addEventListener('scroll', () => {
       let currentSectionId = '';
-      const scrollPosition = window.pageYOffset + 120;
+      const scrollPosition = window.pageYOffset + 140;
 
       sections.forEach(section => {
         const sectionTop = section.offsetTop;
@@ -79,6 +57,22 @@ const Navigation = {
           link.classList.add('active');
         }
       });
+    }, { passive: true });
+  },
+
+  setupMobileTapReveal() {
+    const sidebar = document.getElementById('mac-sidebar');
+    if (!sidebar) return;
+
+    // Support mobile tap reveal brief behavior
+    sidebar.addEventListener('touchstart', (e) => {
+      const link = e.target.closest('.sidebar-link');
+      if (link) {
+        link.classList.add('active');
+        setTimeout(() => {
+          link.classList.remove('active');
+        }, 1200);
+      }
     }, { passive: true });
   }
 };

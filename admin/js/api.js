@@ -7,19 +7,22 @@ const AdminAPI = {
   baseUrl: '/api/admin',
 
   async request(endpoint, options = {}) {
-    const defaultHeaders = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    };
+    const isFormData = options.body instanceof FormData;
+    const defaultHeaders = isFormData
+      ? { 'Accept': 'application/json' }
+      : {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        };
 
     const config = {
       method: options.method || 'GET',
-      headers: { ...defaultHeaders, ...options.headers },
+      headers: { ...defaultHeaders, ...(options.headers || {}) },
       credentials: 'include', // Include HttpOnly JSESSIONID session cookie
       ...options
     };
 
-    if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
+    if (options.body && typeof options.body === 'object' && !isFormData) {
       config.body = JSON.stringify(options.body);
     }
 
@@ -27,21 +30,24 @@ const AdminAPI = {
       const response = await fetch(`${this.baseUrl}${endpoint}`, config);
 
       if (response.status === 401 || response.status === 403) {
-        // Trigger login modal/view if unauthenticated
-        AdminApp.showLogin();
+        if (window.AdminApp) AdminApp.showLogin();
         throw new Error('Unauthorized or session expired');
       }
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API Error (${response.status}): ${errorText}`);
+      const contentType = response.headers.get('content-type') || '';
+      let data = null;
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
       }
 
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        return await response.json();
+      if (!response.ok) {
+        const errorMsg = (data && data.error) ? data.error : ((data && data.message) ? data.message : (typeof data === 'string' ? data : `Error (${response.status})`));
+        throw new Error(errorMsg);
       }
-      return await response.text();
+
+      return data;
     } catch (err) {
       console.error(`API Exception on ${endpoint}:`, err);
       throw err;
@@ -92,8 +98,21 @@ const AdminAPI = {
   async saveBlog(blog) { return this.request('/blogs', { method: 'POST', body: blog }); },
   async deleteBlog(id) { return this.request(`/blogs/${id}`, { method: 'DELETE' }); },
 
+  // Media Library Operations
+  async getMedia() { return this.request('/media'); },
+  async uploadMedia(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.request('/media/upload', {
+      method: 'POST',
+      body: formData
+    });
+  },
+  async deleteMedia(id) { return this.request(`/media/${id}`, { method: 'DELETE' }); },
+
   // Publish Operation (Atomic 2-phase publication)
   async publish() {
     return this.request('/publish', { method: 'POST' });
   }
 };
+

@@ -3,14 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Priyanshu — Developer • Builder • Curious Mind</title>
-  <meta name="description" content="Personal portfolio of Priyanshu — Developer, Builder, Curious Mind. Building high-performance systems and minimal digital spaces.">
-  <meta name="theme-color" content="#0b0c10">
+  <title>Priyanshu's Portfolio</title>
+  <meta name="description" content="Personal portfolio of Priyanshu — Systems, Software & Architecture.">
+  <meta name="theme-color" content="#0b0b0b">
 
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
 
-  <!-- CSS Design Tokens & Layout Modules -->
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- CSS Design Tokens & Modules -->
   <link rel="stylesheet" href="css/variables.css">
   <link rel="stylesheet" href="css/global.css">
   <link rel="stylesheet" href="css/hero.css">
@@ -19,68 +24,71 @@
 </head>
 <body>
 
-  <!-- Site Navigation Header -->
-  <header class="site-header">
-    <div class="container header-inner">
-      <a href="#hero" class="brand-logo">
-        PRIYANSHU<span class="accent-dot"></span>
+  <!-- MAC-STYLE MINIMAL SIDEBAR NAVIGATION RAIL -->
+  <aside class="mac-sidebar" id="mac-sidebar" aria-label="Main Navigation">
+    <div class="sidebar-top">
+      <a href="#hero" class="sidebar-home-btn" aria-label="Home">
+        <span class="icon-mark">◉</span>
       </a>
-
-      <button class="mobile-nav-toggle" aria-label="Toggle Navigation" aria-expanded="false">☰</button>
-
-      <nav>
-        <ul id="dynamic-nav-links" class="nav-links">
-          <!-- Dynamically populated from published sections -->
-        </ul>
-      </nav>
     </div>
-  </header>
+    
+    <nav class="sidebar-nav">
+      <ul id="dynamic-nav-links" class="sidebar-menu">
+        <!-- Dynamically populated from published sections -->
+      </ul>
+    </nav>
+  </aside>
 
-  <!-- PERMANENT HERO SECTION (Outside Dynamic Sections Container) -->
-  <section id="hero" class="hero-section">
-    <div class="container hero-grid">
-      <div class="hero-content">
-        <span class="hero-label">00 // IDENTITY</span>
-        <h1 class="hero-title">PRIYANSHU</h1>
-        <div id="hero-tagline" class="hero-tagline">
-          Developer <span class="bullet">•</span> Builder <span class="bullet">•</span> Curious Mind
-        </div>
-        <div class="hero-actions">
-          <a href="#sec-projects" class="btn btn-primary">Explore Work ↓</a>
-          <a href="#sec-contact" class="btn btn-outline">Get In Touch</a>
-        </div>
-      </div>
+  <!-- MAIN VIEW WRAPPER -->
+  <div class="site-main-wrapper">
 
-      <div class="hero-visual">
-        <div class="illustration-frame">
-          <img id="hero-avatar-img" class="illustration-image" src="assets/images/priyanshu_illustration.svg" alt="Priyanshu Illustration" />
-          <div class="frame-badge">
-            <span class="badge-label">SYSTEM_STATUS</span>
-            <span class="status-indicator">
-              <span class="status-dot"></span> PUBLISHED
-            </span>
+    <!-- PERMANENT HERO SECTION (Outside Dynamic Sections Container) -->
+    <section id="hero" class="hero-section">
+      <div class="container hero-grid">
+        <div class="hero-content">
+          <h1 id="hero-display-name" class="hero-title">PRIYANSHU</h1>
+          <div id="hero-subtitle" class="hero-subtitle"></div>
+          <p id="hero-bio" class="hero-bio-short"></p>
+          <div class="hero-actions">
+            <a href="#sec-projects" class="btn-minimal">View Work ↘</a>
+            <a href="#sec-contact" class="btn-minimal-muted">Contact ↘</a>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <div class="hero-image-container">
+            <img id="hero-avatar-img" class="hero-portrait" src="" alt="" style="display: none;" />
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- DYNAMIC CMS SECTIONS CONTAINER -->
-  <main id="sections-container">
-    <!-- Published sections (Achievements, Experience, Tech Stack, Projects, Blog, Contact) render here dynamically -->
-  </main>
+    <!-- DYNAMIC CMS SECTIONS CONTAINER -->
+    <main id="sections-container">
+      <!-- Published sections render here dynamically -->
+    </main>
 
-  <!-- Site Footer -->
-  <footer class="site-footer">
-    <div class="container footer-inner">
-      <div>
-        <span>© 2026 Priyanshu's Portfolio. All rights reserved.</span>
+    <!-- Site Footer -->
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div>
+          <span>© <span id="footer-year"></span> <span id="footer-name">Priyanshu</span>. All rights reserved.</span>
+        </div>
+        <div id="footer-meta-extra">
+          <!-- Configurable site metadata -->
+        </div>
       </div>
-      <div>
-        <span>Hosted at <strong>astra.me</strong></span>
-      </div>
+    </footer>
+
+  </div>
+
+  <!-- ARTICLE READER MODAL (For Blogs) -->
+  <div id="article-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-card">
+      <button id="modal-close-btn" class="modal-close" aria-label="Close article">✕</button>
+      <div id="modal-content" class="modal-body"></div>
     </div>
-  </footer>
+  </div>
 
   <!-- Scripts -->
   <script src="js/config.js"></script>

@@ -1,13 +1,1 @@
-{
-  "version": 1,
-  "updatedAt": "2026-08-15T00:00:00Z",
-  "files": {
-    "profile": "profile.v1.json",
-    "sections": "sections.v1.json",
-    "achievements": "achievements.v1.json",
-    "experience": "experience.v1.json",
-    "skills": "skills.v1.json",
-    "projects": "projects.v1.json",
-    "blogs": "blogs.v1.json"
-  }
-}
+{"version":9,"updatedAt":"2026-08-15T18:52:43.532866100Z","files":{"profile":"profile.v9.json","sections":"sections.v9.json","achievements":"achievements.v9.json","experience":"experience.v9.json","skills":"skills.v9.json","projects":"projects.v9.json","blogs":"blogs.v9.json"}}

@@ -16,8 +16,12 @@ public class ExperienceEntity {
 
     private String role;
     private String company;
+    private String location;
     private String startDate;
     private String endDate;
+
+    @Column(name = "is_current_role")
+    private Boolean currentRole;
 
     @Column(columnDefinition = "TEXT")
     private String description;

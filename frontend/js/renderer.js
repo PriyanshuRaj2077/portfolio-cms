@@ -1,10 +1,11 @@
 /* ==========================================================================
    DYNAMIC SECTION RENDERER & SANITIZATION ENGINE
+   Editorial Layout & Monochrome Icon Resolver
    ========================================================================== */
 
 const Renderer = {
   /**
-   * Simple client-side HTML sanitizer to prevent XSS attacks
+   * Client-side HTML sanitizer to prevent XSS
    */
   sanitizeHTML(dirty) {
     if (!dirty) return '';
@@ -14,12 +15,23 @@ const Renderer = {
   },
 
   /**
+   * Single-letter navigation letter resolver directly from CMS
+   */
+  getSectionNavLetter(section) {
+    let raw = (section.navLetter || section.icon || '').trim();
+    if (!raw && section.title) {
+      raw = section.title.trim().charAt(0);
+    }
+    return (raw.charAt(0) || 'S').toUpperCase();
+  },
+
+  /**
    * Main section renderer router
    */
   renderSection(section, data) {
     const sectionElement = document.createElement('section');
-    sectionElement.id = section.id || `section-${section.order}`;
-    sectionElement.className = `section ${section.theme ? 'theme-' + section.theme : 'theme-default'}`;
+    sectionElement.id = section.id || `sec-${section.order}`;
+    sectionElement.className = 'section';
 
     let innerContent = '';
 
@@ -43,7 +55,7 @@ const Renderer = {
         innerContent = this.renderContact(data.profile || {});
         break;
       case 'TEXT':
-        innerContent = this.renderText(section.contentData || '');
+        innerContent = this.renderText(section.contentData || section.description || '');
         break;
       case 'GALLERY':
         innerContent = this.renderGallery(section.contentData || []);
@@ -52,10 +64,12 @@ const Renderer = {
         innerContent = `<p>${this.sanitizeHTML(section.description || '')}</p>`;
     }
 
+    const sectionNum = String(section.sortOrder || section.order || 1).padStart(2, '0');
+
     sectionElement.innerHTML = `
       <div class="container">
         <div class="section-header">
-          ${section.label ? `<span class="section-label">${this.sanitizeHTML(section.label)}</span>` : ''}
+          <span class="section-label-number">${sectionNum}  ${this.sanitizeHTML(section.label || 'SECTION')}</span>
           <h2 class="section-title">${this.sanitizeHTML(section.title)}</h2>
           ${section.description ? `<p class="section-description">${this.sanitizeHTML(section.description)}</p>` : ''}
         </div>
@@ -72,12 +86,12 @@ const Renderer = {
   renderAchievements(achievements) {
     if (!achievements || achievements.length === 0) return '<p>No achievements published yet.</p>';
     return `
-      <div class="achievements-grid">
+      <div class="achievements-editorial-list">
         ${achievements.map(item => `
-          <div class="achievement-card">
-            <div class="achievement-metric">${this.sanitizeHTML(item.metric)}</div>
-            <div class="achievement-title">${this.sanitizeHTML(item.title)}</div>
-            <div class="achievement-desc">${this.sanitizeHTML(item.desc)}</div>
+          <div class="achievement-editorial-item">
+            <div class="achievement-editorial-metric">${this.sanitizeHTML(item.metric)}</div>
+            <div class="achievement-editorial-title">${this.sanitizeHTML(item.title)}</div>
+            <div class="achievement-editorial-desc">${this.sanitizeHTML(item.descText || item.desc || '')}</div>
           </div>
         `).join('')}
       </div>
@@ -88,42 +102,46 @@ const Renderer = {
   renderTimeline(experience) {
     if (!experience || experience.length === 0) return '<p>No experience history published yet.</p>';
     return `
-      <div class="timeline-list">
-        ${experience.map(item => `
-          <div class="timeline-item">
-            <div class="timeline-header">
-              <div>
-                <div class="timeline-role">${this.sanitizeHTML(item.role)}</div>
-                <div class="timeline-company">${this.sanitizeHTML(item.company)}</div>
+      <div class="experience-editorial-list">
+        ${experience.map(item => {
+          let highlights = [];
+          if (Array.isArray(item.highlights)) {
+            highlights = item.highlights;
+          } else if (typeof item.highlightsJson === 'string') {
+            try { highlights = JSON.parse(item.highlightsJson); } catch (e) { highlights = []; }
+          }
+          return `
+            <div class="experience-editorial-item">
+              <div class="experience-header">
+                <div class="experience-role-company">
+                  ${this.sanitizeHTML(item.role)} <span class="company">— ${this.sanitizeHTML(item.company)}</span>
+                </div>
+                <div class="experience-date">${this.sanitizeHTML(item.startDate || '')} — ${this.sanitizeHTML(item.endDate || 'Present')}</div>
               </div>
-              <div class="timeline-date">${this.sanitizeHTML(item.startDate)} — ${this.sanitizeHTML(item.endDate)}</div>
+              ${item.description ? `<p class="experience-desc">${this.sanitizeHTML(item.description)}</p>` : ''}
+              ${highlights.length ? `
+                <ul class="experience-highlights">
+                  ${highlights.map(h => `<li>${this.sanitizeHTML(h)}</li>`).join('')}
+                </ul>
+              ` : ''}
             </div>
-            <p class="timeline-desc">${this.sanitizeHTML(item.description)}</p>
-            ${item.highlights && item.highlights.length ? `
-              <ul class="timeline-highlights">
-                ${item.highlights.map(h => `<li>${this.sanitizeHTML(h)}</li>`).join('')}
-              </ul>
-            ` : ''}
-          </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
     `;
   },
 
-  // 3. Skills Renderer
+  // 3. Skills / Tech Stack Renderer (Clean Typographic Grid - No Progress Bars!)
   renderSkills(skillsData) {
-    if (!skillsData || skillsData.length === 0) return '<p>No skills published yet.</p>';
+    if (!skillsData || skillsData.length === 0) return '<p>No tech stack published yet.</p>';
     return `
-      <div class="skills-categories">
+      <div class="techstack-editorial">
         ${skillsData.map(cat => `
-          <div class="skills-category">
-            <h3 class="skills-category-title">${this.sanitizeHTML(cat.category)}</h3>
-            <div class="skills-grid">
-              ${cat.skills.map(s => `
-                <div class="skill-chip">
-                  <span>${this.sanitizeHTML(s.name)}</span>
-                  ${s.level ? `<span class="skill-level">${this.sanitizeHTML(s.level)}</span>` : ''}
-                </div>
+          <div class="techstack-category">
+            <h3 class="techstack-cat-title">${this.sanitizeHTML(cat.category)}</h3>
+            <div class="techstack-items-grid">
+              ${(cat.skills || []).map(s => `
+                <span class="techstack-item">${this.sanitizeHTML(s.name)}</span>
               `).join('')}
             </div>
           </div>
@@ -132,94 +150,99 @@ const Renderer = {
     `;
   },
 
-  // 4. Projects Renderer
+  // 4. Projects Renderer (Editorial List / Grid)
   renderProjects(projects) {
     if (!projects || projects.length === 0) return '<p>No projects published yet.</p>';
     return `
-      <div class="projects-grid">
-        ${projects.map(p => `
-          <div class="project-card">
-            ${p.coverImage ? `
-              <div class="project-thumb">
-                <img src="${this.sanitizeHTML(p.coverImage)}" alt="${this.sanitizeHTML(p.title)}" loading="lazy" />
-              </div>
-            ` : ''}
-            <div class="project-body">
-              ${p.tags && p.tags.length ? `
-                <div class="project-tags">
-                  ${p.tags.map(t => `<span class="tag">${this.sanitizeHTML(t)}</span>`).join('')}
+      <div class="projects-editorial-list">
+        ${projects.map((p, idx) => {
+          const num = String(idx + 1).padStart(2, '0');
+          let tags = [];
+          if (Array.isArray(p.tags)) {
+            tags = p.tags;
+          } else if (typeof p.tagsJson === 'string') {
+            try { tags = JSON.parse(p.tagsJson); } catch (e) { tags = p.tagsJson.split(','); }
+          }
+          return `
+            <div class="project-editorial-item">
+              <div class="project-num">${num}</div>
+              <div class="project-details">
+                <div>
+                  <a href="${this.sanitizeHTML(p.liveUrl || p.repoUrl || '#')}" target="_blank" rel="noopener" class="project-title-link">
+                    ${this.sanitizeHTML(p.title)} ↗
+                  </a>
                 </div>
-              ` : ''}
-              <h3 class="project-title">${this.sanitizeHTML(p.title)}</h3>
-              <p class="project-desc">${this.sanitizeHTML(p.summary)}</p>
-              <div class="project-links">
-                ${p.repoUrl ? `<a href="${this.sanitizeHTML(p.repoUrl)}" target="_blank" rel="noopener" class="project-link">GitHub ↗</a>` : ''}
-                ${p.liveUrl ? `<a href="${this.sanitizeHTML(p.liveUrl)}" target="_blank" rel="noopener" class="project-link">Live Demo ↗</a>` : ''}
+                <p class="project-summary-text">${this.sanitizeHTML(p.summary || p.description || '')}</p>
+                ${tags.length ? `
+                  <div class="project-tech-tags">
+                    ${tags.map(t => `<span class="project-tech-tag">${this.sanitizeHTML(t.trim())}</span>`).join('')}
+                  </div>
+                ` : ''}
+              </div>
+              <div class="project-arrow-links">
+                ${p.repoUrl ? `<a href="${this.sanitizeHTML(p.repoUrl)}" target="_blank" rel="noopener" class="project-action-link">GitHub</a>` : ''}
+                ${p.liveUrl ? `<a href="${this.sanitizeHTML(p.liveUrl)}" target="_blank" rel="noopener" class="project-action-link">Live</a>` : ''}
               </div>
             </div>
-          </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
     `;
   },
 
-  // 5. Blogs Renderer
+  // 5. Blogs Renderer (Editorial List)
   renderBlogs(blogs) {
     if (!blogs || blogs.length === 0) return '<p>No articles published yet.</p>';
     return `
-      <div class="blogs-grid">
-        ${blogs.map(b => `
-          <div class="blog-card">
-            <div class="blog-meta">
-              <span>${this.sanitizeHTML(b.date)}</span>
-              <span>•</span>
-              <span>${this.sanitizeHTML(b.readTime)}</span>
-            </div>
-            <h3 class="blog-title">${this.sanitizeHTML(b.title)}</h3>
-            <p class="blog-summary">${this.sanitizeHTML(b.summary)}</p>
-            ${b.tags && b.tags.length ? `
-              <div class="project-tags">
-                ${b.tags.map(t => `<span class="tag">${this.sanitizeHTML(t)}</span>`).join('')}
+      <div class="blogs-editorial-list">
+        ${blogs.map((b, idx) => {
+          const num = String(idx + 1).padStart(2, '0');
+          return `
+            <div class="blog-editorial-item" data-blog-id="${this.sanitizeHTML(b.id || b.slug || idx)}">
+              <div class="blog-num">${num}</div>
+              <div class="blog-main">
+                <div class="blog-editorial-title">${this.sanitizeHTML(b.title)}</div>
+                <div class="blog-editorial-summary">${this.sanitizeHTML(b.summary || '')}</div>
               </div>
-            ` : ''}
-          </div>
-        `).join('')}
+              <div class="blog-date-meta">
+                ${this.sanitizeHTML(b.date || '')} ${b.readTime ? `• ${this.sanitizeHTML(b.readTime)}` : ''}
+              </div>
+            </div>
+          `;
+        }).join('')}
       </div>
     `;
   },
 
-  // 6. Contact Renderer
+  // 6. Contact Renderer (Minimal Editorial List)
   renderContact(profile) {
     const social = profile.socialLinks || {};
     return `
-      <div class="contact-container">
-        <div class="contact-text">
-          <h3>Let's Build Something Together</h3>
-          <p>${this.sanitizeHTML(profile.bio || 'Feel free to reach out for collaborations, architecture consulting, or just a quick chat.')}</p>
-        </div>
-        <div class="contact-links">
+      <div class="contact-editorial">
+        <p class="contact-intro-text">${this.sanitizeHTML(profile.bio || 'Reach out directly for collaborations or technical discussions.')}</p>
+        <div class="contact-links-list">
           ${profile.email ? `
-            <a href="mailto:${this.sanitizeHTML(profile.email)}" class="contact-link-item">
-              <span class="contact-icon">✉</span>
-              <span>${this.sanitizeHTML(profile.email)}</span>
+            <a href="mailto:${this.sanitizeHTML(profile.email)}" class="contact-item-link">
+              <span>Email</span>
+              <span>${this.sanitizeHTML(profile.email)} ↗</span>
             </a>
           ` : ''}
-          ${social.github ? `
-            <a href="${this.sanitizeHTML(social.github)}" target="_blank" rel="noopener" class="contact-link-item">
-              <span class="contact-icon">⚙</span>
-              <span>GitHub Profile</span>
+          ${profile.githubUrl || social.github ? `
+            <a href="${this.sanitizeHTML(profile.githubUrl || social.github)}" target="_blank" rel="noopener" class="contact-item-link">
+              <span>GitHub</span>
+              <span>github.com ↗</span>
             </a>
           ` : ''}
-          ${social.linkedin ? `
-            <a href="${this.sanitizeHTML(social.linkedin)}" target="_blank" rel="noopener" class="contact-link-item">
-              <span class="contact-icon">💼</span>
+          ${profile.linkedinUrl || social.linkedin ? `
+            <a href="${this.sanitizeHTML(profile.linkedinUrl || social.linkedin)}" target="_blank" rel="noopener" class="contact-item-link">
               <span>LinkedIn</span>
+              <span>linkedin.com ↗</span>
             </a>
           ` : ''}
-          ${social.twitter ? `
-            <a href="${this.sanitizeHTML(social.twitter)}" target="_blank" rel="noopener" class="contact-link-item">
-              <span class="contact-icon">💬</span>
+          ${profile.twitterUrl || social.twitter ? `
+            <a href="${this.sanitizeHTML(profile.twitterUrl || social.twitter)}" target="_blank" rel="noopener" class="contact-item-link">
               <span>Twitter / X</span>
+              <span>x.com ↗</span>
             </a>
           ` : ''}
         </div>
@@ -234,18 +257,7 @@ const Renderer = {
 
   // 8. Gallery Renderer
   renderGallery(images) {
-    if (!images || images.length === 0) return '<p>No gallery images published yet.</p>';
-    return `
-      <div class="projects-grid">
-        ${images.map(img => `
-          <div class="project-card">
-            <div class="project-thumb">
-              <img src="${this.sanitizeHTML(img.url)}" alt="${this.sanitizeHTML(img.caption || '')}" loading="lazy" />
-            </div>
-            ${img.caption ? `<div class="project-body"><p class="project-desc">${this.sanitizeHTML(img.caption)}</p></div>` : ''}
-          </div>
-        `).join('')}
-      </div>
-    `;
+    if (!images || images.length === 0) return '<p>No gallery items published yet.</p>';
+    return `<div class="techstack-items-grid">${images.map(img => `<span>${this.sanitizeHTML(img.caption || img.url)}</span>`).join('')}</div>`;
   }
 };

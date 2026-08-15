@@ -14,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -46,11 +47,14 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("authenticated", false, "message", "Invalid username or password"));
         }
 
-        UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(username, password);
-        Authentication auth = authenticationManager.authenticate(token);
+        List<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities =
+                List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority(adminOpt.get().getRole()));
 
-        SecurityContext securityContext = SecurityContextHolder.getContext();
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(username, null, authorities);
+
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
         securityContext.setAuthentication(auth);
+        SecurityContextHolder.setContext(securityContext);
 
         HttpSession session = request.getSession(true);
         session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);

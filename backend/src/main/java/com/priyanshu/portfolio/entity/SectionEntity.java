@@ -19,8 +19,11 @@ public class SectionEntity {
 
     private String label;
 
-    @Column(nullable = false)
     private String type; // TEXT, PROJECTS, SKILLS, TIMELINE, ACHIEVEMENTS, BLOG, GALLERY, CONTACT
+
+    private String navLetter; // Single navigation letter e.g. A, E, T, P, B, C
+
+    private String icon;
 
     @Column(name = "sort_order", nullable = false)
     private Integer order;

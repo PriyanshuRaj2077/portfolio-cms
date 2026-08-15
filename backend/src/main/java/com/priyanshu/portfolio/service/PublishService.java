@@ -44,10 +44,25 @@ public class PublishService {
         this.projectRepository = projectRepository;
         this.blogPostRepository = blogPostRepository;
         this.objectMapper = objectMapper;
+        this.currentVersion = getLatestPublishedVersion();
+    }
+
+    private int getLatestPublishedVersion() {
+        try {
+            byte[] manifestBytes = storageService.readFile("manifest.json");
+            if (manifestBytes != null && manifestBytes.length > 0) {
+                com.fasterxml.jackson.databind.JsonNode node = objectMapper.readTree(manifestBytes);
+                if (node.has("version")) {
+                    return node.get("version").asInt(1);
+                }
+            }
+        } catch (Exception ignored) {}
+        return 1;
     }
 
     public synchronized Map<String, Object> publish() throws Exception {
-        int newVersion = currentVersion + 1;
+        int latestVersion = getLatestPublishedVersion();
+        int newVersion = Math.max(latestVersion, this.currentVersion) + 1;
         String vStr = ".v" + newVersion + ".json";
 
         String profileFilename = "profile" + vStr;
@@ -93,7 +108,7 @@ public class PublishService {
 
         // Step 4: If ANY upload failed, ABORT and DO NOT update manifest.json
         if (!failedUploads.isEmpty()) {
-            throw new IllegalStateException("Atomic Publish Aborted: Upload failed for files: " + failedUploads + ". Manifest retained at version v" + currentVersion);
+            throw new IllegalStateException("Atomic Publish Aborted: Upload failed for files: " + failedUploads + ". Manifest retained at version v" + latestVersion);
         }
 
         // Step 5: If ALL uploads succeeded, update and upload manifest.json LAST
@@ -123,26 +138,26 @@ public class PublishService {
 
     private ProfileEntity createDefaultProfile() {
         return ProfileEntity.builder()
-                .name("Priyanshu")
-                .title("Developer • Builder • Curious Mind")
-                .bio("Building minimal, resilient software, high-performance web systems, and exploring curious technical ideas.")
-                .location("Global / Remote")
-                .email("contact@priyanshu.me")
-                .githubUrl("https://github.com")
-                .linkedinUrl("https://linkedin.com")
-                .twitterUrl("https://x.com")
-                .avatarUrl("assets/images/priyanshu_illustration.svg")
+                .name("PRIYANSHU")
+                .title("Software & Systems Engineering")
+                .bio("")
+                .location("")
+                .email("")
+                .githubUrl("")
+                .linkedinUrl("")
+                .twitterUrl("")
+                .avatarUrl("")
                 .build();
     }
 
     private List<SectionEntity> createDefaultSections() {
         return Arrays.asList(
-            SectionEntity.builder().id("sec-achievements").title("Key Achievements").label("01 // HIGHLIGHTS").type("ACHIEVEMENTS").order(1).visible(true).theme("default").build(),
-            SectionEntity.builder().id("sec-experience").title("Work Experience").label("02 // TIMELINE").type("TIMELINE").order(2).visible(true).theme("purple").build(),
-            SectionEntity.builder().id("sec-tech-stack").title("Tech Stack & Tools").label("03 // SKILLS").type("SKILLS").order(3).visible(true).theme("default").build(),
-            SectionEntity.builder().id("sec-projects").title("Selected Projects").label("04 // WORK").type("PROJECTS").order(4).visible(true).theme("orange").build(),
-            SectionEntity.builder().id("sec-blog").title("Writing & Thoughts").label("05 // JOURNAL").type("BLOG").order(5).visible(true).theme("default").build(),
-            SectionEntity.builder().id("sec-contact").title("Get In Touch").label("06 // CONNECT").type("CONTACT").order(6).visible(true).theme("default").build()
+            SectionEntity.builder().id("sec-achievements").title("Achievements").label("01 // HIGHLIGHTS").type("ACHIEVEMENTS").navLetter("A").icon("A").order(1).visible(true).theme("default").build(),
+            SectionEntity.builder().id("sec-experience").title("Experience").label("02 // TIMELINE").type("TIMELINE").navLetter("E").icon("E").order(2).visible(true).theme("default").build(),
+            SectionEntity.builder().id("sec-tech-stack").title("Tech Stack").label("03 // SKILLS").type("SKILLS").navLetter("T").icon("T").order(3).visible(true).theme("default").build(),
+            SectionEntity.builder().id("sec-projects").title("Projects").label("04 // WORK").type("PROJECTS").navLetter("P").icon("P").order(4).visible(true).theme("default").build(),
+            SectionEntity.builder().id("sec-blog").title("Blogs").label("05 // JOURNAL").type("BLOG").navLetter("B").icon("B").order(5).visible(true).theme("default").build(),
+            SectionEntity.builder().id("sec-contact").title("Contact").label("06 // CONNECT").type("CONTACT").navLetter("C").icon("C").order(6).visible(true).theme("default").build()
         );
     }
 }
