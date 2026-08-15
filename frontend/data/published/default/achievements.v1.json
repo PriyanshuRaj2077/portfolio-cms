@@ -1,0 +1,20 @@
+[
+  {
+    "id": "ach-1",
+    "title": "High-Throughput Systems",
+    "metric": "10M+",
+    "desc": "Requests processed daily with 99.99% uptime across production services."
+  },
+  {
+    "id": "ach-2",
+    "title": "Open Source Impact",
+    "metric": "2,500+",
+    "desc": "GitHub stars across open-source developer tooling and utility libraries."
+  },
+  {
+    "id": "ach-3",
+    "title": "Performance Optimization",
+    "metric": "65%",
+    "desc": "Reduction in latency after refactoring core database access patterns."
+  }
+]

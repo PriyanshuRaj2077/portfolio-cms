@@ -1,0 +1,20 @@
+[
+  {
+    "id": "blog-1",
+    "title": "Building a Zero Cold-Start Architecture for Personal Portfolios",
+    "slug": "zero-cold-start-architecture",
+    "date": "2026-08-10",
+    "readTime": "5 min read",
+    "tags": ["Architecture", "Performance", "Static Generation"],
+    "summary": "Why visitors shouldn't wait for application servers to spin up, and how atomic static JSON publishing solves rendering latency."
+  },
+  {
+    "id": "blog-2",
+    "title": "Minimalism in Modern Editorial Web Design",
+    "slug": "minimalism-in-editorial-web-design",
+    "date": "2026-07-28",
+    "readTime": "4 min read",
+    "tags": ["Design", "CSS", "Typography"],
+    "summary": "Balancing dark charcoal themes, strong typography hierarchy, and selective accent colors without unnecessary UI clutter."
+  }
+]

@@ -1,0 +1,100 @@
+/* ==========================================================================
+   RESPONSIVE DESIGN BREAKPOINTS
+   Mobile (< 768px), Tablet (768px - 1024px), Desktop (> 1024px)
+   ========================================================================== */
+
+/* Tablet Breakpoint */
+@media (max-width: 1024px) {
+  :root {
+    --space-xl: 3.5rem;
+    --space-2xl: 5rem;
+  }
+
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+
+  .hero-visual {
+    order: -1;
+    justify-content: flex-start;
+  }
+
+  .illustration-frame {
+    max-width: 360px;
+    aspect-ratio: 16/9;
+  }
+
+  .contact-container {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+}
+
+/* Mobile Breakpoint */
+@media (max-width: 768px) {
+  :root {
+    --header-height: 68px;
+    --space-md: 1.25rem;
+    --space-lg: 2rem;
+    --space-xl: 2.75rem;
+  }
+
+  .mobile-nav-toggle {
+    display: block;
+  }
+
+  .nav-links {
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    right: 0;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-light);
+    flex-direction: column;
+    padding: var(--space-md);
+    gap: var(--space-sm);
+    transform: translateY(-150%);
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--transition-smooth);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  }
+
+  .nav-links.open {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .hero-title {
+    font-size: clamp(3rem, 14vw, 5.5rem);
+  }
+
+  .hero-tagline {
+    font-size: 1.05rem;
+  }
+
+  .illustration-frame {
+    max-width: 100%;
+    aspect-ratio: 16/10;
+  }
+
+  .projects-grid,
+  .blogs-grid,
+  .achievements-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+  }
+
+  .footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+}

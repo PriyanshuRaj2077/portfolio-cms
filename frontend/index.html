@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Priyanshu — Developer • Builder • Curious Mind</title>
+  <meta name="description" content="Personal portfolio of Priyanshu — Developer, Builder, Curious Mind. Building high-performance systems and minimal digital spaces.">
+  <meta name="theme-color" content="#0b0c10">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+
+  <!-- CSS Design Tokens & Layout Modules -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/hero.css">
+  <link rel="stylesheet" href="css/sections.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <!-- Site Navigation Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#hero" class="brand-logo">
+        PRIYANSHU<span class="accent-dot"></span>
+      </a>
+
+      <button class="mobile-nav-toggle" aria-label="Toggle Navigation" aria-expanded="false">☰</button>
+
+      <nav>
+        <ul id="dynamic-nav-links" class="nav-links">
+          <!-- Dynamically populated from published sections -->
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- PERMANENT HERO SECTION (Outside Dynamic Sections Container) -->
+  <section id="hero" class="hero-section">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <span class="hero-label">00 // IDENTITY</span>
+        <h1 class="hero-title">PRIYANSHU</h1>
+        <div id="hero-tagline" class="hero-tagline">
+          Developer <span class="bullet">•</span> Builder <span class="bullet">•</span> Curious Mind
+        </div>
+        <div class="hero-actions">
+          <a href="#sec-projects" class="btn btn-primary">Explore Work ↓</a>
+          <a href="#sec-contact" class="btn btn-outline">Get In Touch</a>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="illustration-frame">
+          <img id="hero-avatar-img" class="illustration-image" src="assets/images/priyanshu_illustration.svg" alt="Priyanshu Illustration" />
+          <div class="frame-badge">
+            <span class="badge-label">SYSTEM_STATUS</span>
+            <span class="status-indicator">
+              <span class="status-dot"></span> PUBLISHED
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DYNAMIC CMS SECTIONS CONTAINER -->
+  <main id="sections-container">
+    <!-- Published sections (Achievements, Experience, Tech Stack, Projects, Blog, Contact) render here dynamically -->
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <span>© 2026 Priyanshu's Portfolio. All rights reserved.</span>
+      </div>
+      <div>
+        <span>Hosted at <strong>astra.me</strong></span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/navigation.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

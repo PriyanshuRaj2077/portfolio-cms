@@ -1,0 +1,27 @@
+[
+  {
+    "id": "exp-1",
+    "role": "Senior Systems Engineer",
+    "company": "Tech Corp / Platform Team",
+    "startDate": "2024",
+    "endDate": "Present",
+    "description": "Architecting resilient distributed services, managing storage abstractions, and optimizing database performance.",
+    "highlights": [
+      "Designed event-driven backend pipelines handling millions of daily data points.",
+      "Lead developer on zero-downtime database migration strategy.",
+      "Mentored junior engineers and established automated code quality checks."
+    ]
+  },
+  {
+    "id": "exp-2",
+    "role": "Full Stack Developer",
+    "company": "Digital Innovations Inc.",
+    "startDate": "2022",
+    "endDate": "2024",
+    "description": "Built responsive web applications, REST APIs, and admin management portals.",
+    "highlights": [
+      "Developed custom admin CMS with automated static site generation.",
+      "Implemented OAuth2 and session-based security protocols across services."
+    ]
+  }
+]

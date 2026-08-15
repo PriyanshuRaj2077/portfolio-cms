@@ -1,0 +1,30 @@
+[
+  {
+    "category": "Languages & Core",
+    "skills": [
+      { "name": "Java 21", "level": "Expert" },
+      { "name": "JavaScript (ES6+)", "level": "Expert" },
+      { "name": "SQL", "level": "Advanced" },
+      { "name": "HTML5 / CSS3", "level": "Expert" }
+    ]
+  },
+  {
+    "category": "Backend & Storage",
+    "skills": [
+      { "name": "Spring Boot 3", "level": "Expert" },
+      { "name": "Spring Security", "level": "Advanced" },
+      { "name": "PostgreSQL", "level": "Advanced" },
+      { "name": "JPA / Hibernate", "level": "Advanced" },
+      { "name": "REST APIs", "level": "Expert" }
+    ]
+  },
+  {
+    "category": "DevOps & Tooling",
+    "skills": [
+      { "name": "Git", "level": "Expert" },
+      { "name": "Docker", "level": "Intermediate" },
+      { "name": "Maven / Gradle", "level": "Advanced" },
+      { "name": "CDN / Object Storage", "level": "Advanced" }
+    ]
+  }
+]

@@ -1,0 +1,22 @@
+[
+  {
+    "id": "proj-1",
+    "title": "Astra Portfolio CMS",
+    "summary": "Lightweight, zero-cold-start portfolio engine with Java Spring Boot CMS, PostgreSQL, and static CDN publishing.",
+    "tags": ["Java", "Spring Boot", "PostgreSQL", "Vanilla JS"],
+    "coverImage": "assets/images/priyanshu_illustration.svg",
+    "repoUrl": "https://github.com",
+    "liveUrl": "https://astra.me",
+    "status": "Featured"
+  },
+  {
+    "id": "proj-2",
+    "title": "High-Performance Data Storage Adapter",
+    "summary": "Unified storage abstraction layer supporting local filesystem and object storage providers with atomic verification.",
+    "tags": ["Java 21", "S3 API", "Spring Data"],
+    "coverImage": "assets/images/priyanshu_illustration.svg",
+    "repoUrl": "https://github.com",
+    "liveUrl": null,
+    "status": "Active"
+  }
+]

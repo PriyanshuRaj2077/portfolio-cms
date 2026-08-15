@@ -1,0 +1,62 @@
+[
+  {
+    "id": "sec-achievements",
+    "title": "Key Achievements",
+    "label": "01 // HIGHLIGHTS",
+    "type": "ACHIEVEMENTS",
+    "order": 1,
+    "visible": true,
+    "theme": "default",
+    "description": "Selected metrics, milestones, and engineering impact."
+  },
+  {
+    "id": "sec-experience",
+    "title": "Work Experience",
+    "label": "02 // TIMELINE",
+    "type": "TIMELINE",
+    "order": 2,
+    "visible": true,
+    "theme": "purple",
+    "description": "Professional engineering background and leadership roles."
+  },
+  {
+    "id": "sec-tech-stack",
+    "title": "Tech Stack & Tools",
+    "label": "03 // SKILLS",
+    "type": "SKILLS",
+    "order": 3,
+    "visible": true,
+    "theme": "default",
+    "description": "Core technologies, backend systems, and frontend frameworks I work with."
+  },
+  {
+    "id": "sec-projects",
+    "title": "Selected Projects",
+    "label": "04 // WORK",
+    "type": "PROJECTS",
+    "order": 4,
+    "visible": true,
+    "theme": "orange",
+    "description": "Featured open-source work, tools, and technical applications."
+  },
+  {
+    "id": "sec-blog",
+    "title": "Writing & Thoughts",
+    "label": "05 // JOURNAL",
+    "type": "BLOG",
+    "order": 5,
+    "visible": true,
+    "theme": "default",
+    "description": "Articles on system architecture, software design, and engineering."
+  },
+  {
+    "id": "sec-contact",
+    "title": "Get In Touch",
+    "label": "06 // CONNECT",
+    "type": "CONTACT",
+    "order": 6,
+    "visible": true,
+    "theme": "default",
+    "description": "Have a project in mind or want to talk tech? Reach out directly."
+  }
+]

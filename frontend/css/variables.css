@@ -1,0 +1,62 @@
+/* ==========================================================================
+   ASTRA / PRIYANSHU'S PORTFOLIO - DESIGN SYSTEM TOKENS
+   Minimal + Editorial + Personal + Modern Dark Theme System
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Syne:wght@600;700;800&display=swap');
+
+:root {
+  /* Color Palette - Dark Canvas */
+  --bg-primary: #0b0c10;
+  --bg-secondary: #12141c;
+  --bg-card: #161824;
+  --bg-card-hover: #1c1f2e;
+  --bg-subtle: rgba(255, 255, 255, 0.03);
+
+  /* Typography Colors */
+  --text-primary: #f4f5f8;
+  --text-secondary: #a0a5b5;
+  --text-muted: #646878;
+  --text-inverse: #0b0c10;
+
+  /* Accent Colors (Selective Usage) */
+  --accent-orange: #ff5e36;
+  --accent-orange-hover: #ff724e;
+  --accent-orange-bg: rgba(255, 94, 54, 0.07);
+  --accent-orange-border: rgba(255, 94, 54, 0.3);
+
+  --accent-purple: #8b5cf6;
+  --accent-purple-hover: #9f75ff;
+  --accent-purple-bg: rgba(139, 92, 246, 0.07);
+  --accent-purple-border: rgba(139, 92, 246, 0.3);
+
+  /* Borders & Dividers */
+  --border-light: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.16);
+  --border-accent: rgba(255, 94, 54, 0.4);
+
+  /* Fonts */
+  --font-display: 'Syne', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Spacing System */
+  --space-xs: 0.5rem;   /* 8px */
+  --space-sm: 1rem;     /* 16px */
+  --space-md: 1.75rem;  /* 28px */
+  --space-lg: 3rem;     /* 48px */
+  --space-xl: 5rem;     /* 80px */
+  --space-2xl: 8rem;    /* 128px */
+
+  /* Layout */
+  --container-max-width: 1240px;
+  --header-height: 80px;
+
+  /* Radii & Effects */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  --transition-fast: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
