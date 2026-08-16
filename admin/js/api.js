@@ -5,6 +5,38 @@
 
 const AdminAPI = {
   baseUrl: '/api/admin',
+  csrfToken: null,
+
+  getCookie(name) {
+    const match = document.cookie.match(new RegExp('(^|;\\s*)' + name + '=([^;]*)'));
+    return match ? decodeURIComponent(match[2]) : null;
+  },
+
+  getCsrfToken() {
+    return this.getCookie('XSRF-TOKEN') || this.csrfToken;
+  },
+
+  async ensureCsrfToken() {
+    let token = this.getCsrfToken();
+    if (token) return token;
+
+    try {
+      const res = await fetch(`${this.baseUrl}/auth/csrf`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.token) {
+          this.csrfToken = data.token;
+          return data.token;
+        }
+      }
+    } catch (e) {
+      console.warn('CSRF bootstrap fetch failed:', e);
+    }
+    return this.getCsrfToken();
+  },
 
   async request(endpoint, options = {}) {
     const isFormData = options.body instanceof FormData;
@@ -15,9 +47,23 @@ const AdminAPI = {
           'Accept': 'application/json'
         };
 
+    const method = (options.method || 'GET').toUpperCase();
+    const headers = { ...defaultHeaders, ...(options.headers || {}) };
+
+    // Attach CSRF token on mutating methods (POST, PUT, PATCH, DELETE)
+    if (!['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method)) {
+      let token = this.getCsrfToken();
+      if (!token) {
+        token = await this.ensureCsrfToken();
+      }
+      if (token) {
+        headers['X-XSRF-TOKEN'] = token;
+      }
+    }
+
     const config = {
-      method: options.method || 'GET',
-      headers: { ...defaultHeaders, ...(options.headers || {}) },
+      method: method,
+      headers: headers,
       credentials: 'include', // Include HttpOnly JSESSIONID session cookie
       ...options
     };
@@ -29,9 +75,16 @@ const AdminAPI = {
     try {
       const response = await fetch(`${this.baseUrl}${endpoint}`, config);
 
+      // Keep token updated from cookie if changed
+      const cookieToken = this.getCookie('XSRF-TOKEN');
+      if (cookieToken) {
+        this.csrfToken = cookieToken;
+      }
+
       if (response.status === 401 || response.status === 403) {
-        if (window.AdminApp) AdminApp.showLogin();
-        throw new Error('Unauthorized or session expired');
+        if (window.AdminApp && endpoint !== '/auth/login') {
+          AdminApp.showLogin();
+        }
       }
 
       const contentType = response.headers.get('content-type') || '';
@@ -40,6 +93,10 @@ const AdminAPI = {
         data = await response.json();
       } else {
         data = await response.text();
+      }
+
+      if (data && data.csrfToken) {
+        this.csrfToken = data.csrfToken;
       }
 
       if (!response.ok) {

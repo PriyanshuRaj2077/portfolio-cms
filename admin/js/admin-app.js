@@ -51,11 +51,35 @@ const AdminApp = {
       });
     }
 
+    // Mobile Sidebar Drawer controls
+    const mobileToggle = document.getElementById('mobile-menu-toggle');
+    const sidebar = document.getElementById('admin-sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    const closeBtn = document.getElementById('sidebar-close-btn');
+
+    const toggleSidebar = () => {
+      if (sidebar) {
+        const isOpen = sidebar.classList.toggle('open');
+        if (backdrop) backdrop.classList.toggle('active', isOpen);
+      }
+    };
+    const closeSidebar = () => {
+      if (sidebar) sidebar.classList.remove('open');
+      if (backdrop) backdrop.classList.remove('active');
+    };
+
+    if (mobileToggle) mobileToggle.addEventListener('click', toggleSidebar);
+    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+    if (backdrop) backdrop.addEventListener('click', closeSidebar);
+
     // Sidebar navigation clicks
     document.querySelectorAll('.sidebar-nav .nav-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const tab = e.currentTarget.getAttribute('data-tab');
-        if (tab) this.switchTab(tab);
+        if (tab) {
+          this.switchTab(tab);
+          closeSidebar();
+        }
       });
     });
 
@@ -64,6 +88,7 @@ const AdminApp = {
     if (logoutBtn) {
       logoutBtn.addEventListener('click', async () => {
         await AdminAPI.logout();
+        closeSidebar();
         this.showLogin();
       });
     }
@@ -75,7 +100,10 @@ const AdminApp = {
     }
     const sidebarPublishBtn = document.getElementById('sidebar-publish-btn');
     if (sidebarPublishBtn) {
-      sidebarPublishBtn.addEventListener('click', () => this.handlePublish());
+      sidebarPublishBtn.addEventListener('click', () => {
+        closeSidebar();
+        this.handlePublish();
+      });
     }
   },
 
@@ -94,6 +122,12 @@ const AdminApp = {
 
   async switchTab(tabName) {
     this.currentTab = tabName;
+
+    // Close mobile drawer if open
+    const sidebar = document.getElementById('admin-sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    if (sidebar) sidebar.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('active');
 
     // Update nav link active styles
     document.querySelectorAll('.sidebar-nav .nav-btn').forEach(btn => {
@@ -341,12 +375,24 @@ const AdminApp = {
     let sections = [];
     try { sections = await AdminAPI.getSections() || []; } catch(e) { sections = []; }
 
+    // Deterministic sort: visible sections first by order, then hidden
+    sections.sort((a, b) => {
+      const aVis = a.visible !== false;
+      const bVis = b.visible !== false;
+      if (aVis && !bVis) return -1;
+      if (!aVis && bVis) return 1;
+      return (a.order || a.sortOrder || 0) - (b.order || b.sortOrder || 0);
+    });
+
+    const visibleSections = sections.filter(s => s.visible !== false);
+    const visibleCount = visibleSections.length;
+
     container.innerHTML = `
       <div class="editorial-card">
         <div class="card-header">
           <div>
             <h2 class="card-title">Dynamic Sections</h2>
-            <p class="card-subtitle">Manage portfolio sections, display order, and single-letter navigation</p>
+            <p class="card-subtitle">Manage portfolio sections, deterministic display order, and single-letter navigation</p>
           </div>
           <button id="new-section-btn" class="btn btn-primary">+ Add New Section</button>
         </div>
@@ -386,8 +432,9 @@ const AdminApp = {
                 </select>
               </div>
               <div class="form-group">
-                <label class="form-label" for="sec-order">Sort Order</label>
-                <input type="number" id="sec-order" class="form-input" value="1" min="1">
+                <label class="form-label" for="sec-order">Position / Sort Order (1 to ${visibleCount + 1})</label>
+                <input type="number" id="sec-order" class="form-input" value="1" min="1" max="${visibleCount + 1}">
+                <p class="form-helper">Choosing an occupied position automatically shifts other visible sections.</p>
               </div>
             </div>
 
@@ -408,7 +455,7 @@ const AdminApp = {
               </label>
             </div>
 
-            <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
+            <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;">
               <button type="submit" class="btn btn-primary">Save Section ↘</button>
               <button type="button" id="section-cancel-btn-2" class="btn btn-secondary">Cancel</button>
             </div>
@@ -418,24 +465,35 @@ const AdminApp = {
         <!-- Sections List -->
         <div class="item-row-list" id="sections-list">
           ${sections.length === 0 ? '<p style="color: var(--text-muted);">No sections created yet.</p>' : ''}
-          ${sections.map(sec => `
+          ${sections.map((sec, idx) => {
+            const isVis = sec.visible !== false;
+            const currentOrder = sec.order || sec.sortOrder || 1;
+            const canMoveUp = isVis && currentOrder > 1;
+            const canMoveDown = isVis && currentOrder < visibleCount;
+
+            return `
             <div class="item-row" data-id="${sec.id}">
               <div class="item-main">
                 <div class="item-title-line">
                   <span class="tag-letter">${sec.navLetter || '—'}</span>
                   <span class="item-title">${sec.title}</span>
-                  <span class="tag-badge ${sec.visible ? 'published' : 'draft'}">${sec.visible ? 'VISIBLE' : 'HIDDEN'}</span>
+                  <span class="tag-badge ${isVis ? 'published' : 'draft'}">${isVis ? `POS #${currentOrder}` : 'HIDDEN'}</span>
                   <span class="tag-badge">${sec.type || 'TEXT'}</span>
                 </div>
-                <div class="item-meta">Order: ${sec.order || sec.sortOrder || 1} • ID: ${sec.id}</div>
+                <div class="item-meta">Letter: <strong>${sec.navLetter || '—'}</strong> • Order: ${currentOrder} • ID: ${sec.id}</div>
                 ${sec.description ? `<div class="item-subtext">${sec.description}</div>` : ''}
               </div>
               <div class="item-actions">
+                ${isVis ? `
+                  <button class="btn btn-secondary btn-sm sec-move-up-btn" data-id="${sec.id}" ${canMoveUp ? '' : 'disabled style="opacity:0.4; cursor:not-allowed;"'} title="Move Up">↑ Up</button>
+                  <button class="btn btn-secondary btn-sm sec-move-down-btn" data-id="${sec.id}" ${canMoveDown ? '' : 'disabled style="opacity:0.4; cursor:not-allowed;"'} title="Move Down">↓ Down</button>
+                ` : ''}
                 <button class="btn btn-secondary btn-sm sec-edit-btn" data-id="${sec.id}">Edit</button>
                 <button class="btn btn-danger btn-sm sec-del-btn" data-id="${sec.id}">Delete</button>
               </div>
             </div>
-          `).join('')}
+          `;
+          }).join('')}
         </div>
       </div>
     `;
@@ -464,7 +522,7 @@ const AdminApp = {
         document.getElementById('sec-title').value = '';
         document.getElementById('sec-letter').value = '';
         document.getElementById('sec-type').value = 'TEXT';
-        document.getElementById('sec-order').value = sections.length + 1;
+        document.getElementById('sec-order').value = visibleCount + 1;
         document.getElementById('sec-label').value = '';
         document.getElementById('sec-desc').value = '';
         document.getElementById('sec-visible').checked = true;
@@ -477,6 +535,42 @@ const AdminApp = {
     newBtn.addEventListener('click', () => openForm());
     cancelBtn.addEventListener('click', closeForm);
     cancelBtn2.addEventListener('click', closeForm);
+
+    // Quick Move Up button
+    container.querySelectorAll('.sec-move-up-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        const sec = sections.find(s => s.id === id);
+        if (sec && (sec.order || sec.sortOrder || 1) > 1) {
+          try {
+            btn.disabled = true;
+            await AdminAPI.saveSection({ ...sec, order: (sec.order || sec.sortOrder || 1) - 1 });
+            AdminApp.showBanner(`Section "${sec.title}" moved up.`);
+            AdminApp.switchTab('sections');
+          } catch (err) {
+            AdminApp.showBanner('Reorder failed: ' + err.message, true);
+          }
+        }
+      });
+    });
+
+    // Quick Move Down button
+    container.querySelectorAll('.sec-move-down-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        const sec = sections.find(s => s.id === id);
+        if (sec && (sec.order || sec.sortOrder || 1) < visibleCount) {
+          try {
+            btn.disabled = true;
+            await AdminAPI.saveSection({ ...sec, order: (sec.order || sec.sortOrder || 1) + 1 });
+            AdminApp.showBanner(`Section "${sec.title}" moved down.`);
+            AdminApp.switchTab('sections');
+          } catch (err) {
+            AdminApp.showBanner('Reorder failed: ' + err.message, true);
+          }
+        }
+      });
+    });
 
     // Edit button click
     container.querySelectorAll('.sec-edit-btn').forEach(btn => {
@@ -503,7 +597,7 @@ const AdminApp = {
       });
     });
 
-    // Form submit with Single-Letter Navigation Validation
+    // Form submit with Single-Letter Navigation Validation & Auto Reordering
     document.getElementById('section-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const id = document.getElementById('sec-id').value.trim();
@@ -525,7 +619,7 @@ const AdminApp = {
       if (visible) {
         const duplicate = sections.find(s => s.id !== id && s.visible !== false && (s.navLetter || '').toUpperCase() === rawLetter);
         if (duplicate) {
-          AdminApp.showBanner(`Navigation letter ${rawLetter} is already assigned to another visible section (${duplicate.title}).`, true);
+          AdminApp.showBanner(`Navigation letter "${rawLetter}" is already assigned to another visible section (${duplicate.title}).`, true);
           return;
         }
       }
@@ -545,7 +639,7 @@ const AdminApp = {
 
       try {
         await AdminAPI.saveSection(payload);
-        AdminApp.showBanner('Section saved successfully.');
+        AdminApp.showBanner('Section saved and reordered successfully.');
         AdminApp.switchTab('sections');
       } catch (err) {
         AdminApp.showBanner('Save failed: ' + err.message, true);

@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Priyanshu's Portfolio</title>
-  <meta name="description" content="Personal portfolio of Priyanshu — Systems, Software & Architecture.">
+  <title>Portfolio</title>
+  <meta name="description" id="meta-description" content="Portfolio — Systems, Software & Architecture.">
   <meta name="theme-color" content="#0b0b0b">
 
   <!-- Favicon -->
@@ -16,18 +17,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <!-- CSS Design Tokens & Modules -->
-  <link rel="stylesheet" href="css/variables.css">
-  <link rel="stylesheet" href="css/global.css">
-  <link rel="stylesheet" href="css/hero.css">
-  <link rel="stylesheet" href="css/sections.css">
-  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/hero.css">
+  <link rel="stylesheet" href="/css/sections.css">
+  <link rel="stylesheet" href="/css/responsive.css">
 </head>
 <body>
 
   <!-- MAC-STYLE MINIMAL SIDEBAR NAVIGATION RAIL -->
   <aside class="mac-sidebar" id="mac-sidebar" aria-label="Main Navigation">
     <div class="sidebar-top">
-      <a href="#hero" class="sidebar-home-btn" aria-label="Home">
+      <a href="#hero" class="sidebar-home-btn" id="sidebar-home-link" aria-label="Home">
         <span class="icon-mark">◉</span>
       </a>
     </div>
@@ -42,58 +43,81 @@
   <!-- MAIN VIEW WRAPPER -->
   <div class="site-main-wrapper">
 
-    <!-- PERMANENT HERO SECTION (Outside Dynamic Sections Container) -->
-    <section id="hero" class="hero-section">
-      <div class="container hero-grid">
-        <div class="hero-content">
-          <h1 id="hero-display-name" class="hero-title">PRIYANSHU</h1>
-          <div id="hero-subtitle" class="hero-subtitle"></div>
-          <p id="hero-bio" class="hero-bio-short"></p>
-          <div class="hero-actions">
-            <a href="#sec-projects" class="btn-minimal">View Work ↘</a>
-            <a href="#sec-contact" class="btn-minimal-muted">Contact ↘</a>
+    <!-- PORTFOLIO MAIN VIEW -->
+    <div id="portfolio-view">
+      <!-- PERMANENT HERO SECTION (Outside Dynamic Sections Container) -->
+      <section id="hero" class="hero-section">
+        <div class="container hero-grid">
+          <div class="hero-content">
+            <h1 id="hero-display-name" class="hero-title"></h1>
+            <div id="hero-subtitle" class="hero-subtitle"></div>
+            <p id="hero-bio" class="hero-bio-short"></p>
+            <div class="hero-actions">
+              <a href="#sec-projects" class="btn-minimal" id="hero-work-btn">View Work ↘</a>
+              <a href="#sec-contact" class="btn-minimal-muted" id="hero-contact-btn">Contact ↘</a>
+            </div>
+          </div>
+
+          <div class="hero-visual">
+            <div class="hero-image-container">
+              <img id="hero-avatar-img" class="hero-portrait" src="" alt="" style="display: none;" />
+            </div>
           </div>
         </div>
+      </section>
 
-        <div class="hero-visual">
-          <div class="hero-image-container">
-            <img id="hero-avatar-img" class="hero-portrait" src="" alt="" style="display: none;" />
+      <!-- DYNAMIC CMS SECTIONS CONTAINER -->
+      <main id="sections-container">
+        <!-- Published sections render here dynamically -->
+      </main>
+
+      <!-- Site Footer -->
+      <footer class="site-footer">
+        <div class="container footer-inner">
+          <div>
+            <span>© <span id="footer-year"></span> <span id="footer-name"></span>. All rights reserved.</span>
+          </div>
+          <div id="footer-meta-extra">
+            <!-- Configurable site metadata -->
           </div>
         </div>
-      </div>
-    </section>
-
-    <!-- DYNAMIC CMS SECTIONS CONTAINER -->
-    <main id="sections-container">
-      <!-- Published sections render here dynamically -->
-    </main>
-
-    <!-- Site Footer -->
-    <footer class="site-footer">
-      <div class="container footer-inner">
-        <div>
-          <span>© <span id="footer-year"></span> <span id="footer-name">Priyanshu</span>. All rights reserved.</span>
-        </div>
-        <div id="footer-meta-extra">
-          <!-- Configurable site metadata -->
-        </div>
-      </div>
-    </footer>
-
-  </div>
-
-  <!-- ARTICLE READER MODAL (For Blogs) -->
-  <div id="article-modal" class="modal-overlay" aria-hidden="true">
-    <div class="modal-card">
-      <button id="modal-close-btn" class="modal-close" aria-label="Close article">✕</button>
-      <div id="modal-content" class="modal-body"></div>
+      </footer>
     </div>
+
+    <!-- DEDICATED ARTICLE VIEW (For /blog/<slug>) -->
+    <div id="article-view" style="display: none;">
+      <article class="article-page-container container">
+        <div class="article-page-nav">
+          <a href="/" id="article-back-btn" class="article-back-link">← Back to Overview</a>
+        </div>
+        <header class="article-page-header">
+          <div class="article-page-meta">
+            <span id="article-date-meta" class="article-meta-item"></span>
+            <span id="article-read-meta" class="article-meta-item"></span>
+          </div>
+          <h1 id="article-title-heading" class="article-page-title"></h1>
+          <p id="article-summary-lead" class="article-page-summary"></p>
+          <div id="article-tags-container" class="article-page-tags"></div>
+        </header>
+        <div id="article-body-content" class="article-page-body"></div>
+      </article>
+
+      <footer class="site-footer">
+        <div class="container footer-inner">
+          <div>
+            <span>© <span id="article-footer-year"></span> <span id="article-footer-name"></span>. All rights reserved.</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
   </div>
 
   <!-- Scripts -->
-  <script src="js/config.js"></script>
-  <script src="js/renderer.js"></script>
-  <script src="js/navigation.js"></script>
-  <script src="js/app.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/renderer.js"></script>
+  <script src="/js/navigation.js"></script>
+  <script src="/js/app.js"></script>
 </body>
 </html>
+

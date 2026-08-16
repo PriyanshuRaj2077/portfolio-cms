@@ -61,6 +61,25 @@ public class AdminApiController {
         return ResponseEntity.ok(profileRepository.save(profile));
     }
 
+    // Helper to generate unique, deterministic, readable section IDs (e.g. sec-photography, sec-photography-2)
+    private String generateUniqueSectionId(String title) {
+        String baseSlug = (title != null && !title.isBlank())
+                ? title.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "")
+                : "section";
+        if (baseSlug.isBlank()) {
+            baseSlug = "section";
+        }
+        String candidateId = "sec-" + baseSlug;
+        if (!sectionRepository.existsById(candidateId)) {
+            return candidateId;
+        }
+        int counter = 2;
+        while (sectionRepository.existsById(candidateId + "-" + counter)) {
+            counter++;
+        }
+        return candidateId + "-" + counter;
+    }
+
     // Sections
     @GetMapping("/sections")
     public ResponseEntity<List<SectionEntity>> getSections() {
@@ -76,10 +95,9 @@ public class AdminApiController {
         }
         section.setNavLetter(navLetter);
 
-        // 2. Assign default ID if new
+        // 2. Assign unique ID if new (preserve existing ID if editing)
         if (section.getId() == null || section.getId().isBlank()) {
-            String slug = section.getTitle() != null ? section.getTitle().toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "") : "";
-            section.setId("sec-" + (slug.isBlank() ? UUID.randomUUID().toString().substring(0, 8) : slug));
+            section.setId(generateUniqueSectionId(section.getTitle()));
         }
 
         // 3. Duplicate Letter Validation among visible sections
@@ -95,12 +113,58 @@ public class AdminApiController {
             }
         }
 
-        return ResponseEntity.ok(sectionRepository.save(section));
+        // 4. Automatic Section Reordering & Deterministic Positioning
+        if (isVisible) {
+            int targetOrder = (section.getOrder() != null && section.getOrder() >= 1) ? section.getOrder() : 1;
+
+            // Get all other visible sections in ascending order
+            List<SectionEntity> visibleSections = sectionRepository.findAllByOrderByOrderAsc().stream()
+                    .filter(s -> !s.getId().equals(section.getId()) && s.getVisible() != null && s.getVisible())
+                    .collect(java.util.stream.Collectors.toList());
+
+            int insertIndex = Math.min(Math.max(0, targetOrder - 1), visibleSections.size());
+            visibleSections.add(insertIndex, section);
+
+            // Re-normalize orders sequentially 1..N
+            for (int i = 0; i < visibleSections.size(); i++) {
+                SectionEntity s = visibleSections.get(i);
+                s.setOrder(i + 1);
+                sectionRepository.save(s);
+            }
+            return ResponseEntity.ok(section);
+        } else {
+            // Hidden section
+            if (section.getOrder() == null) {
+                section.setOrder(99);
+            }
+            SectionEntity saved = sectionRepository.save(section);
+
+            // Re-normalize remaining visible sections
+            List<SectionEntity> remainingVisible = sectionRepository.findAllByOrderByOrderAsc().stream()
+                    .filter(s -> !s.getId().equals(section.getId()) && s.getVisible() != null && s.getVisible())
+                    .collect(java.util.stream.Collectors.toList());
+            for (int i = 0; i < remainingVisible.size(); i++) {
+                SectionEntity s = remainingVisible.get(i);
+                s.setOrder(i + 1);
+                sectionRepository.save(s);
+            }
+            return ResponseEntity.ok(saved);
+        }
     }
 
     @DeleteMapping("/sections/{id}")
     public ResponseEntity<?> deleteSection(@PathVariable String id) {
         sectionRepository.deleteById(id);
+
+        // Normalize remaining visible sections to contiguous 1..N order
+        List<SectionEntity> remainingVisible = sectionRepository.findAllByOrderByOrderAsc().stream()
+                .filter(s -> s.getVisible() != null && s.getVisible())
+                .collect(java.util.stream.Collectors.toList());
+        for (int i = 0; i < remainingVisible.size(); i++) {
+            SectionEntity s = remainingVisible.get(i);
+            s.setOrder(i + 1);
+            sectionRepository.save(s);
+        }
         return ResponseEntity.ok(Map.of("success", true));
     }
 

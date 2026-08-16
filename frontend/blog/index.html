@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Redirecting to Article...</title>
+  <script>
+    (function() {
+      var path = window.location.pathname;
+      var slug = path.replace(/^\/blog\/?/, '').replace(/\/$/, '');
+      if (slug) {
+        window.location.replace('/?blog=' + encodeURIComponent(slug));
+      } else {
+        window.location.replace('/');
+      }
+    })();
+  </script>
+</head>
+<body style="background:#0b0b0b;color:#ededed;font-family:sans-serif;padding:2rem;">
+  <p>Loading article...</p>
+</body>
+</html>

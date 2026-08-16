@@ -26,7 +26,7 @@
   align-items: flex-start;
 }
 
-/* DOMINANT HERO NAME: PRIYANSHU */
+/* DOMINANT HERO NAME */
 .hero-title {
   font-family: var(--font-display);
   font-size: clamp(3.5rem, 8vw, 6.8rem);

@@ -6,7 +6,8 @@
     "date": "2026-08-10",
     "readTime": "5 min read",
     "tags": ["Architecture", "Performance", "Static Generation"],
-    "summary": "Why visitors shouldn't wait for application servers to spin up, and how atomic static JSON publishing solves rendering latency."
+    "summary": "Why visitors shouldn't wait for application servers to spin up, and how atomic static JSON publishing solves rendering latency.",
+    "contentMarkdown": "## The Problem with Traditional Server-Rendered Portfolios\n\nVisitors should never experience cold-start latency when browsing engineering portfolios. When application servers spin down after periods of inactivity, a first-time visitor often encounters multi-second delays.\n\n### The Static Generation Solution\n\nBy leveraging atomic static JSON publishing, the public portfolio remains entirely static:\n\n- **Zero runtime dependencies** on the backend during public traffic\n- **Instant TTFB** (Time to First Byte) via global CDN edge caching\n- **Versioned manifest immutability** for rollback safety\n\n```json\n{\n  \"version\": 1,\n  \"files\": {\n    \"profile\": \"profile.v1.json\",\n    \"sections\": \"sections.v1.json\"\n  }\n}\n```\n\nAll content modifications flow through the Admin CMS into PostgreSQL, which publishes versioned immutable JSON artifacts atomically."
   },
   {
     "id": "blog-2",
@@ -15,6 +16,8 @@
     "date": "2026-07-28",
     "readTime": "4 min read",
     "tags": ["Design", "CSS", "Typography"],
-    "summary": "Balancing dark charcoal themes, strong typography hierarchy, and selective accent colors without unnecessary UI clutter."
+    "summary": "Balancing dark charcoal themes, strong typography hierarchy, and selective accent colors without unnecessary UI clutter.",
+    "contentMarkdown": "## Principles of Restrained Typography\n\nModern digital portfolios benefit immensely from editorial typography principles rather than generic dashboard templates.\n\n### Core Design Tenets\n\n1. **High-contrast, near-black backgrounds** (`#0B0B0B`)\n2. **Monospace metadata accents** with clean sans-serif editorial display headings\n3. **Single-letter rail navigation** with responsive scroll-spy\n\n> Restraint in color and ornamentation elevates technical focus."
   }
 ]
+

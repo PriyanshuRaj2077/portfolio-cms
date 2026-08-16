@@ -40,11 +40,17 @@
 
   <!-- ADMIN MAIN LAYOUT -->
   <div id="admin-layout" class="admin-layout" style="display: none;">
+    <!-- SIDEBAR BACKDROP FOR MOBILE -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+
     <!-- SIDEBAR -->
-    <aside class="admin-sidebar">
+    <aside id="admin-sidebar" class="admin-sidebar">
       <div class="sidebar-brand">
-        <span class="sidebar-brand-title">PORTFOLIO</span>
-        <span class="sidebar-brand-badge">// CMS</span>
+        <div class="sidebar-brand-text">
+          <span class="sidebar-brand-title">PORTFOLIO</span>
+          <span class="sidebar-brand-badge">// CMS</span>
+        </div>
+        <button id="sidebar-close-btn" class="sidebar-close-btn" aria-label="Close Menu">✕</button>
       </div>
 
       <ul class="sidebar-nav">
@@ -111,10 +117,17 @@
     <!-- MAIN WORKSPACE -->
     <main class="admin-main">
       <header class="admin-topbar">
-        <div id="topbar-title" class="topbar-title">Profile Management</div>
+        <div class="topbar-left">
+          <button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-label="Toggle navigation menu">
+            <span class="hamburger-bar"></span>
+            <span class="hamburger-bar"></span>
+            <span class="hamburger-bar"></span>
+          </button>
+          <div id="topbar-title" class="topbar-title">Profile Management</div>
+        </div>
         <div class="topbar-actions">
           <button id="publish-site-btn" class="btn btn-publish btn-sm">
-            Publish Changes ↗
+            Publish ↗
           </button>
         </div>
       </header>

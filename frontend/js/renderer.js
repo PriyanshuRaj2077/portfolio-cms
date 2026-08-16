@@ -1,17 +1,179 @@
 /* ==========================================================================
    DYNAMIC SECTION RENDERER & SANITIZATION ENGINE
-   Editorial Layout & Monochrome Icon Resolver
+   Editorial Layout & Markdown Pipeline
    ========================================================================== */
 
 const Renderer = {
   /**
-   * Client-side HTML sanitizer to prevent XSS
+   * Client-side text sanitizer to prevent XSS in simple strings
    */
   sanitizeHTML(dirty) {
     if (!dirty) return '';
     const temp = document.createElement('div');
-    temp.textContent = dirty;
+    temp.textContent = String(dirty);
     return temp.innerHTML;
+  },
+
+  /**
+   * HTML Sanitizer using browser DOMParser.
+   * Strips dangerous tags (<script>, <style>, <iframe>, <object>, <embed>, <form>, <input>, etc.),
+   * all inline event handlers (onload, onerror, onclick, etc.),
+   * and unsafe URI schemes (javascript:, data:text/html, vbscript:).
+   */
+  sanitizeRenderedHTML(htmlString) {
+    if (!htmlString) return '';
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlString, 'text/html');
+
+    const allowedTags = new Set([
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'hr',
+      'strong', 'b', 'em', 'i', 'u', 's', 'del', 'strike',
+      'code', 'pre', 'blockquote', 'ul', 'ol', 'li',
+      'a', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span', 'div'
+    ]);
+
+    const allowedAttributes = {
+      'a': ['href', 'title', 'target', 'rel'],
+      'img': ['src', 'alt', 'title', 'width', 'height'],
+      'code': ['class'],
+      'pre': ['class'],
+      'th': ['align'],
+      'td': ['align'],
+      'span': ['class'],
+      'div': ['class']
+    };
+
+    const sanitizeNode = (node) => {
+      const children = Array.from(node.childNodes);
+      for (const child of children) {
+        if (child.nodeType === Node.ELEMENT_NODE) {
+          const tagName = child.tagName.toLowerCase();
+          if (!allowedTags.has(tagName)) {
+            child.remove();
+            continue;
+          }
+
+          const attrs = Array.from(child.attributes);
+          const validAttrs = allowedAttributes[tagName] || [];
+          for (const attr of attrs) {
+            const attrName = attr.name.toLowerCase();
+            if (attrName.startsWith('on') || !validAttrs.includes(attrName)) {
+              child.removeAttribute(attr.name);
+            } else if (attrName === 'href' || attrName === 'src') {
+              const val = attr.value.trim().toLowerCase();
+              if (val.startsWith('javascript:') || val.startsWith('vbscript:') || val.startsWith('data:text/html')) {
+                child.removeAttribute(attr.name);
+              }
+            }
+          }
+
+          if (tagName === 'a' && child.hasAttribute('href')) {
+            child.setAttribute('target', '_blank');
+            child.setAttribute('rel', 'noopener noreferrer');
+          }
+
+          sanitizeNode(child);
+        } else if (child.nodeType === Node.COMMENT_NODE) {
+          child.remove();
+        }
+      }
+    };
+
+    sanitizeNode(doc.body);
+    return doc.body.innerHTML;
+  },
+
+  /**
+   * Markdown Parser to HTML Pipeline with Sanitization
+   * Markdown -> Parser -> HTML -> Sanitizer -> Safe HTML
+   */
+  renderMarkdown(markdown) {
+    if (!markdown) return '';
+    let md = String(markdown);
+
+    // Normalize newlines
+    md = md.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    // Code blocks
+    const codeBlocks = [];
+    md = md.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+      const index = codeBlocks.length;
+      const escapedCode = code
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      codeBlocks.push(`<pre><code class="language-${lang}">${escapedCode}</code></pre>`);
+      return `@@CODEBLOCK_${index}@@`;
+    });
+
+    // Inline code
+    const inlineCodes = [];
+    md = md.replace(/`([^`\n]+)`/g, (match, code) => {
+      const index = inlineCodes.length;
+      const escapedCode = code
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      inlineCodes.push(`<code>${escapedCode}</code>`);
+      return `@@INLINECODE_${index}@@`;
+    });
+
+    // Headings (H6 down to H1)
+    md = md.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
+    md = md.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
+    md = md.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
+    md = md.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+    md = md.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+    md = md.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+
+    // Horizontal Rules
+    md = md.replace(/^(?:---|\*\*\*|___)\s*$/gm, '<hr>');
+
+    // Blockquotes
+    md = md.replace(/^>\s+(.+)$/gm, '<blockquote><p>$1</p></blockquote>');
+
+    // Bold & Italic
+    md = md.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
+    md = md.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    md = md.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+    md = md.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    md = md.replace(/_([^_]+)_/g, '<em>$1</em>');
+
+    // Images & Links
+    md = md.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+    md = md.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+
+    // Unordered Lists
+    md = md.replace(/^[\*\-]\s+(.+)$/gm, '<li>$1</li>');
+    md = md.replace(/(<li>[\s\S]*?<\/li>)/g, (match) => `<ul>${match}</ul>`);
+    md = md.replace(/<\/ul>\s*<ul>/g, '');
+
+    // Ordered Lists
+    md = md.replace(/^\d+\.\s+(.+)$/gm, '<oli>$1</oli>');
+    md = md.replace(/(<oli>[\s\S]*?<\/oli>)/g, (match) => {
+      const fixed = match.replace(/<\/?oli>/g, tag => tag.replace('oli', 'li'));
+      return `<ol>${fixed}</ol>`;
+    });
+    md = md.replace(/<\/ol>\s*<ol>/g, '');
+
+    // Paragraphs for remaining text blocks
+    const lines = md.split(/\n\n+/);
+    const parsedBlocks = lines.map(block => {
+      const trimmed = block.trim();
+      if (!trimmed) return '';
+      if (/^(<h[1-6]|<pre|<blockquote|<ul|<ol|<hr|@@CODEBLOCK)/.test(trimmed)) {
+        return trimmed;
+      }
+      return `<p>${trimmed.replace(/\n/g, '<br>')}</p>`;
+    });
+    md = parsedBlocks.filter(Boolean).join('\n\n');
+
+    // Restore code blocks and inline codes
+    md = md.replace(/@@CODEBLOCK_(\d+)@@/g, (match, idx) => codeBlocks[Number(idx)] || '');
+    md = md.replace(/@@INLINECODE_(\d+)@@/g, (match, idx) => inlineCodes[Number(idx)] || '');
+
+    // Pass through HTML sanitizer
+    return this.sanitizeRenderedHTML(md);
   },
 
   /**
@@ -131,7 +293,7 @@ const Renderer = {
     `;
   },
 
-  // 3. Skills / Tech Stack Renderer (Clean Typographic Grid - No Progress Bars!)
+  // 3. Skills / Tech Stack Renderer
   renderSkills(skillsData) {
     if (!skillsData || skillsData.length === 0) return '<p>No tech stack published yet.</p>';
     return `
@@ -150,7 +312,7 @@ const Renderer = {
     `;
   },
 
-  // 4. Projects Renderer (Editorial List / Grid)
+  // 4. Projects Renderer
   renderProjects(projects) {
     if (!projects || projects.length === 0) return '<p>No projects published yet.</p>';
     return `
@@ -168,7 +330,7 @@ const Renderer = {
               <div class="project-num">${num}</div>
               <div class="project-details">
                 <div>
-                  <a href="${this.sanitizeHTML(p.liveUrl || p.repoUrl || '#')}" target="_blank" rel="noopener" class="project-title-link">
+                  <a href="${this.sanitizeHTML(p.liveUrl || p.repoUrl || '#')}" target="_blank" rel="noopener noreferrer" class="project-title-link">
                     ${this.sanitizeHTML(p.title)} ↗
                   </a>
                 </div>
@@ -180,8 +342,8 @@ const Renderer = {
                 ` : ''}
               </div>
               <div class="project-arrow-links">
-                ${p.repoUrl ? `<a href="${this.sanitizeHTML(p.repoUrl)}" target="_blank" rel="noopener" class="project-action-link">GitHub</a>` : ''}
-                ${p.liveUrl ? `<a href="${this.sanitizeHTML(p.liveUrl)}" target="_blank" rel="noopener" class="project-action-link">Live</a>` : ''}
+                ${p.repoUrl ? `<a href="${this.sanitizeHTML(p.repoUrl)}" target="_blank" rel="noopener noreferrer" class="project-action-link">GitHub ↗</a>` : ''}
+                ${p.liveUrl ? `<a href="${this.sanitizeHTML(p.liveUrl)}" target="_blank" rel="noopener noreferrer" class="project-action-link">Live ↗</a>` : ''}
               </div>
             </div>
           `;
@@ -197,8 +359,9 @@ const Renderer = {
       <div class="blogs-editorial-list">
         ${blogs.map((b, idx) => {
           const num = String(idx + 1).padStart(2, '0');
+          const slug = b.slug || b.id || idx;
           return `
-            <div class="blog-editorial-item" data-blog-id="${this.sanitizeHTML(b.id || b.slug || idx)}">
+            <div class="blog-editorial-item" data-blog-slug="${this.sanitizeHTML(slug)}">
               <div class="blog-num">${num}</div>
               <div class="blog-main">
                 <div class="blog-editorial-title">${this.sanitizeHTML(b.title)}</div>
@@ -217,32 +380,37 @@ const Renderer = {
   // 6. Contact Renderer (Minimal Editorial List)
   renderContact(profile) {
     const social = profile.socialLinks || {};
+    const email = profile.email;
+    const githubUrl = profile.githubUrl || social.github;
+    const linkedinUrl = profile.linkedinUrl || social.linkedin;
+    const twitterUrl = profile.twitterUrl || social.twitter;
+
     return `
       <div class="contact-editorial">
-        <p class="contact-intro-text">${this.sanitizeHTML(profile.bio || 'Reach out directly for collaborations or technical discussions.')}</p>
+        <p class="contact-intro-text">${this.sanitizeHTML(profile.bio || 'Reach out directly for collaborations or discussions.')}</p>
         <div class="contact-links-list">
-          ${profile.email ? `
-            <a href="mailto:${this.sanitizeHTML(profile.email)}" class="contact-item-link">
+          ${email ? `
+            <a href="mailto:${this.sanitizeHTML(email)}" class="contact-item-link">
               <span>Email</span>
-              <span>${this.sanitizeHTML(profile.email)} ↗</span>
+              <span>${this.sanitizeHTML(email)} ↗</span>
             </a>
           ` : ''}
-          ${profile.githubUrl || social.github ? `
-            <a href="${this.sanitizeHTML(profile.githubUrl || social.github)}" target="_blank" rel="noopener" class="contact-item-link">
+          ${githubUrl ? `
+            <a href="${this.sanitizeHTML(githubUrl)}" target="_blank" rel="noopener noreferrer" class="contact-item-link">
               <span>GitHub</span>
-              <span>github.com ↗</span>
+              <span>Profile ↗</span>
             </a>
           ` : ''}
-          ${profile.linkedinUrl || social.linkedin ? `
-            <a href="${this.sanitizeHTML(profile.linkedinUrl || social.linkedin)}" target="_blank" rel="noopener" class="contact-item-link">
+          ${linkedinUrl ? `
+            <a href="${this.sanitizeHTML(linkedinUrl)}" target="_blank" rel="noopener noreferrer" class="contact-item-link">
               <span>LinkedIn</span>
-              <span>linkedin.com ↗</span>
+              <span>Profile ↗</span>
             </a>
           ` : ''}
-          ${profile.twitterUrl || social.twitter ? `
-            <a href="${this.sanitizeHTML(profile.twitterUrl || social.twitter)}" target="_blank" rel="noopener" class="contact-item-link">
+          ${twitterUrl ? `
+            <a href="${this.sanitizeHTML(twitterUrl)}" target="_blank" rel="noopener noreferrer" class="contact-item-link">
               <span>Twitter / X</span>
-              <span>x.com ↗</span>
+              <span>Profile ↗</span>
             </a>
           ` : ''}
         </div>
@@ -252,7 +420,7 @@ const Renderer = {
 
   // 7. Custom Text Section Renderer
   renderText(content) {
-    return `<div class="editorial-text">${this.sanitizeHTML(content)}</div>`;
+    return `<div class="editorial-text">${this.renderMarkdown(content)}</div>`;
   },
 
   // 8. Gallery Renderer
@@ -261,3 +429,4 @@ const Renderer = {
     return `<div class="techstack-items-grid">${images.map(img => `<span>${this.sanitizeHTML(img.caption || img.url)}</span>`).join('')}</div>`;
   }
 };
+

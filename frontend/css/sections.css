@@ -336,3 +336,172 @@
   border-color: var(--border-medium);
   background-color: var(--bg-card-hover);
 }
+
+/* ==========================================================================
+   7. DEDICATED ARTICLE PAGE STYLES
+   ========================================================================== */
+.article-page-container {
+  padding-top: var(--space-xl);
+  padding-bottom: var(--space-xl);
+  max-width: 780px;
+  margin: 0 auto;
+  min-height: 70vh;
+}
+
+.article-page-nav {
+  margin-bottom: var(--space-lg);
+}
+
+.article-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  transition: color var(--transition-fast);
+  cursor: pointer;
+}
+
+.article-back-link:hover {
+  color: var(--text-primary);
+}
+
+.article-page-header {
+  margin-bottom: var(--space-xl);
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.article-page-meta {
+  display: flex;
+  gap: 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.85rem;
+}
+
+.article-page-title {
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  font-weight: 700;
+  line-height: 1.12;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  margin-bottom: 1rem;
+}
+
+.article-page-summary {
+  font-size: 1.15rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  margin-bottom: 1.25rem;
+}
+
+.article-page-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.article-page-tag {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-xs);
+}
+
+.article-page-body {
+  color: #d0d0d5;
+  line-height: 1.85;
+  font-size: 1.05rem;
+  font-family: var(--font-body);
+}
+
+.article-page-body h1,
+.article-page-body h2,
+.article-page-body h3,
+.article-page-body h4 {
+  color: var(--text-primary);
+  margin-top: 2rem;
+  margin-bottom: 0.85rem;
+  line-height: 1.25;
+}
+
+.article-page-body h1 { font-size: 2rem; }
+.article-page-body h2 { font-size: 1.6rem; }
+.article-page-body h3 { font-size: 1.3rem; }
+.article-page-body h4 { font-size: 1.1rem; }
+
+.article-page-body p {
+  margin-bottom: 1.35rem;
+  color: #c4c4c8;
+}
+
+.article-page-body strong,
+.article-page-body b {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.article-page-body em,
+.article-page-body i {
+  font-style: italic;
+}
+
+.article-page-body ul,
+.article-page-body ol {
+  margin: 1rem 0 1.5rem 1.75rem;
+}
+
+.article-page-body li {
+  margin-bottom: 0.45rem;
+  color: #c4c4c8;
+}
+
+.article-page-body blockquote {
+  border-left: 2px solid var(--border-medium);
+  padding-left: 1.25rem;
+  margin: 1.5rem 0;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.article-page-body pre {
+  background: #141416;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 1.25rem;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+}
+
+.article-page-body code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.2em 0.45em;
+  border-radius: var(--radius-xs);
+  color: #ededed;
+}
+
+.article-page-body pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.article-page-body hr {
+  border: none;
+  border-top: 1px solid var(--border-light);
+  margin: 2.5rem 0;
+}
+
+.article-page-body a {
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+

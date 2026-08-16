@@ -3,15 +3,11 @@
    ========================================================================== */
 
 const CONFIG = {
-  // Base URL for published static content (Can be updated to CDN URL in prod environment)
-  PUBLIC_CONTENT_BASE_URL: './data/published/default',
+  // Root-aware base URL for published static content
+  PUBLIC_CONTENT_BASE_URL: '/data/published/default',
 
-  // Fallback path if CDN or primary content URL is unreachable
-  BUNDLED_FALLBACK_BASE_URL: './data/published/default',
-
-  // App Identity
-  BRAND_NAME: "Priyanshu's Portfolio",
-  HERO_NAME: "PRIYANSHU",
+  // Bundled fallback base path
+  BUNDLED_FALLBACK_BASE_URL: '/data/published/default',
 
   // Default Published Manifest File Name
   MANIFEST_FILE: 'manifest.json'
@@ -19,3 +15,4 @@ const CONFIG = {
 
 // Freeze config object to prevent runtime mutations
 Object.freeze(CONFIG);
+
