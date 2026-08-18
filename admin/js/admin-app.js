@@ -175,14 +175,11 @@ const AdminApp = {
     banner.className = `status-banner ${isError ? 'error' : 'success'}`;
     banner.innerHTML = `
       <span>${isError ? '✕' : '✓'} ${message}</span>
-      <button onclick="this.parentElement.remove()" style="background:none; border:none; color:inherit; cursor:pointer; font-size:1.1rem;">✕</button>
+      <button onclick="this.parentElement.remove()" style="background:none; border:none; color:inherit; cursor:pointer; font-size:1.1rem; margin-left:0.5rem;">✕</button>
     `;
 
-    const mainView = document.getElementById('admin-main-view');
-    if (mainView && mainView.firstChild) {
-      mainView.insertBefore(banner, mainView.firstChild);
-      setTimeout(() => { if (banner.parentElement) banner.remove(); }, 6000);
-    }
+    document.body.appendChild(banner);
+    setTimeout(() => { if (banner.parentElement) banner.remove(); }, 6000);
   },
 
   async handlePublish() {

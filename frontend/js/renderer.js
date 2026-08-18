@@ -15,6 +15,45 @@ const Renderer = {
   },
 
   /**
+   * Centralized safe URL sanitizer
+   * Allows: https:, http:, mailto:, relative paths (/..., ./..., ../..., media/...), fragments (#...)
+   * Rejects: javascript:, vbscript:, data:, data:text/html, and any executable/unsafe schemes
+   */
+  sanitizeUrl(url) {
+    if (!url || typeof url !== 'string') return '#';
+    const trimmed = url.trim();
+    if (!trimmed) return '#';
+
+    // Fragment links or relative paths
+    if (trimmed.startsWith('#') || trimmed.startsWith('/') || trimmed.startsWith('./') || trimmed.startsWith('../')) {
+      if (/[\s<>"'`]/.test(trimmed)) {
+        return '#';
+      }
+      return this.sanitizeHTML(trimmed);
+    }
+
+    // Protocol check
+    const match = trimmed.match(/^([a-zA-Z0-9+.-]+):/);
+    if (match) {
+      const scheme = match[1].toLowerCase();
+      if (scheme === 'https' || scheme === 'http' || scheme === 'mailto') {
+        if (/[\s<>"'`]/.test(trimmed)) {
+          return '#';
+        }
+        return this.sanitizeHTML(trimmed);
+      }
+      return '#';
+    }
+
+    // Relative path without leading slash (e.g. media/photo.png or data/...)
+    if (/^[a-zA-Z0-9_\-\.\/]+$/.test(trimmed)) {
+      return this.sanitizeHTML(trimmed);
+    }
+
+    return '#';
+  },
+
+  /**
    * HTML Sanitizer using browser DOMParser.
    * Strips dangerous tags (<script>, <style>, <iframe>, <object>, <embed>, <form>, <input>, etc.),
    * all inline event handlers (onload, onerror, onclick, etc.),
@@ -61,7 +100,7 @@ const Renderer = {
               child.removeAttribute(attr.name);
             } else if (attrName === 'href' || attrName === 'src') {
               const val = attr.value.trim().toLowerCase();
-              if (val.startsWith('javascript:') || val.startsWith('vbscript:') || val.startsWith('data:text/html')) {
+              if (val.startsWith('javascript:') || val.startsWith('vbscript:') || val.startsWith('data:') || val.startsWith('file:') || val.startsWith('blob:')) {
                 child.removeAttribute(attr.name);
               }
             }
@@ -177,14 +216,26 @@ const Renderer = {
   },
 
   /**
-   * Single-letter navigation letter resolver directly from CMS
+   * Strict single uppercase navigation letter resolver
+   * section.navLetter -> if missing, first character of section.title -> uppercase [A-Z]
+   * Ignores legacy icon field.
    */
   getSectionNavLetter(section) {
-    let raw = (section.navLetter || section.icon || '').trim();
-    if (!raw && section.title) {
-      raw = section.title.trim().charAt(0);
+    if (!section) return 'S';
+    let raw = '';
+    if (section.navLetter && typeof section.navLetter === 'string') {
+      const match = section.navLetter.trim().match(/[a-zA-Z]/);
+      if (match) {
+        raw = match[0];
+      }
     }
-    return (raw.charAt(0) || 'S').toUpperCase();
+    if (!raw && section.title && typeof section.title === 'string') {
+      const match = section.title.trim().match(/[a-zA-Z]/);
+      if (match) {
+        raw = match[0];
+      }
+    }
+    return (raw || 'S').toUpperCase();
   },
 
   /**
@@ -325,12 +376,13 @@ const Renderer = {
           } else if (typeof p.tagsJson === 'string') {
             try { tags = JSON.parse(p.tagsJson); } catch (e) { tags = p.tagsJson.split(','); }
           }
+          const primaryUrl = p.liveUrl || p.repoUrl || '#';
           return `
             <div class="project-editorial-item">
               <div class="project-num">${num}</div>
               <div class="project-details">
                 <div>
-                  <a href="${this.sanitizeHTML(p.liveUrl || p.repoUrl || '#')}" target="_blank" rel="noopener noreferrer" class="project-title-link">
+                  <a href="${this.sanitizeUrl(primaryUrl)}" target="_blank" rel="noopener noreferrer" class="project-title-link">
                     ${this.sanitizeHTML(p.title)} ↗
                   </a>
                 </div>
@@ -342,8 +394,8 @@ const Renderer = {
                 ` : ''}
               </div>
               <div class="project-arrow-links">
-                ${p.repoUrl ? `<a href="${this.sanitizeHTML(p.repoUrl)}" target="_blank" rel="noopener noreferrer" class="project-action-link">GitHub ↗</a>` : ''}
-                ${p.liveUrl ? `<a href="${this.sanitizeHTML(p.liveUrl)}" target="_blank" rel="noopener noreferrer" class="project-action-link">Live ↗</a>` : ''}
+                ${p.repoUrl ? `<a href="${this.sanitizeUrl(p.repoUrl)}" target="_blank" rel="noopener noreferrer" class="project-action-link">GitHub ↗</a>` : ''}
+                ${p.liveUrl ? `<a href="${this.sanitizeUrl(p.liveUrl)}" target="_blank" rel="noopener noreferrer" class="project-action-link">Live ↗</a>` : ''}
               </div>
             </div>
           `;
@@ -390,25 +442,25 @@ const Renderer = {
         <p class="contact-intro-text">${this.sanitizeHTML(profile.bio || 'Reach out directly for collaborations or discussions.')}</p>
         <div class="contact-links-list">
           ${email ? `
-            <a href="mailto:${this.sanitizeHTML(email)}" class="contact-item-link">
+            <a href="${this.sanitizeUrl(`mailto:${email}`)}" class="contact-item-link">
               <span>Email</span>
               <span>${this.sanitizeHTML(email)} ↗</span>
             </a>
           ` : ''}
           ${githubUrl ? `
-            <a href="${this.sanitizeHTML(githubUrl)}" target="_blank" rel="noopener noreferrer" class="contact-item-link">
+            <a href="${this.sanitizeUrl(githubUrl)}" target="_blank" rel="noopener noreferrer" class="contact-item-link">
               <span>GitHub</span>
               <span>Profile ↗</span>
             </a>
           ` : ''}
           ${linkedinUrl ? `
-            <a href="${this.sanitizeHTML(linkedinUrl)}" target="_blank" rel="noopener noreferrer" class="contact-item-link">
+            <a href="${this.sanitizeUrl(linkedinUrl)}" target="_blank" rel="noopener noreferrer" class="contact-item-link">
               <span>LinkedIn</span>
               <span>Profile ↗</span>
             </a>
           ` : ''}
           ${twitterUrl ? `
-            <a href="${this.sanitizeHTML(twitterUrl)}" target="_blank" rel="noopener noreferrer" class="contact-item-link">
+            <a href="${this.sanitizeUrl(twitterUrl)}" target="_blank" rel="noopener noreferrer" class="contact-item-link">
               <span>Twitter / X</span>
               <span>Profile ↗</span>
             </a>
@@ -426,7 +478,7 @@ const Renderer = {
   // 8. Gallery Renderer
   renderGallery(images) {
     if (!images || images.length === 0) return '<p>No gallery items published yet.</p>';
-    return `<div class="techstack-items-grid">${images.map(img => `<span>${this.sanitizeHTML(img.caption || img.url)}</span>`).join('')}</div>`;
+    return `<div class="techstack-items-grid">${images.map(img => `<span>${this.sanitizeHTML(img.caption || img.url)} ${img.url ? `<a href="${this.sanitizeUrl(img.url)}" target="_blank" rel="noopener noreferrer">↗</a>` : ''}</span>`).join('')}</div>`;
   }
 };
 

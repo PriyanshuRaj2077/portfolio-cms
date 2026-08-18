@@ -58,6 +58,13 @@ public class AdminApiController {
 
     @PutMapping("/profile")
     public ResponseEntity<?> updateProfile(@RequestBody ProfileEntity profile) {
+        List<ProfileEntity> list = profileRepository.findAll();
+        if (!list.isEmpty()) {
+            ProfileEntity existing = list.get(0);
+            if (profile.getId() == null) {
+                profile.setId(existing.getId());
+            }
+        }
         return ResponseEntity.ok(profileRepository.save(profile));
     }
 
@@ -88,8 +95,15 @@ public class AdminApiController {
 
     @PostMapping("/sections")
     public ResponseEntity<?> saveSection(@RequestBody SectionEntity section) {
-        // 1. Navigation Letter Validation (exactly one uppercase alphabetic character [A-Z])
+        // 1. Navigation Letter Resolution & Validation (exactly one uppercase alphabetic character [A-Z])
         String navLetter = section.getNavLetter() != null ? section.getNavLetter().trim().toUpperCase() : "";
+        if (navLetter.isBlank() && section.getTitle() != null && !section.getTitle().isBlank()) {
+            String alphaChars = section.getTitle().trim().replaceAll("[^a-zA-Z]", "");
+            if (!alphaChars.isEmpty()) {
+                navLetter = alphaChars.substring(0, 1).toUpperCase();
+            }
+        }
+
         if (!navLetter.matches("^[A-Z]$")) {
             return ResponseEntity.badRequest().body(Map.of("error", "Navigation letter must be exactly one uppercase letter [A-Z]."));
         }
@@ -256,10 +270,26 @@ public class AdminApiController {
         if (blog.getId() == null || blog.getId().isBlank()) {
             blog.setId("blog-" + UUID.randomUUID().toString().substring(0, 8));
         }
-        if (blog.getSlug() == null || blog.getSlug().isBlank()) {
-            String generatedSlug = blog.getTitle() != null ? blog.getTitle().toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "") : "";
-            blog.setSlug(generatedSlug.isBlank() ? blog.getId() : generatedSlug);
+
+        // Normalize slug safely
+        String normalizedSlug = (blog.getSlug() != null && !blog.getSlug().isBlank())
+                ? blog.getSlug().trim().toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "")
+                : "";
+
+        if (normalizedSlug.isBlank()) {
+            String titleSlug = (blog.getTitle() != null && !blog.getTitle().isBlank())
+                    ? blog.getTitle().toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "")
+                    : "";
+            normalizedSlug = titleSlug.isBlank() ? blog.getId() : titleSlug;
         }
+        blog.setSlug(normalizedSlug);
+
+        // Check if another blog already owns this slug
+        Optional<BlogPostEntity> existingWithSlug = blogPostRepository.findBySlug(normalizedSlug);
+        if (existingWithSlug.isPresent() && !existingWithSlug.get().getId().equals(blog.getId())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Blog slug '" + normalizedSlug + "' is already assigned to another article."));
+        }
+
         if (blog.getStatus() == null || blog.getStatus().isBlank()) {
             blog.setStatus("DRAFT");
         }

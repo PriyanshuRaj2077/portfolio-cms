@@ -998,3 +998,45 @@ a {
   }
 }
 
+/* Status Banner / Toast Notifications */
+.status-banner {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  animation: slideInBanner 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.status-banner.success {
+  background: #121212;
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.status-banner.error {
+  background: #181111;
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+}
+
+@keyframes slideInBanner {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+

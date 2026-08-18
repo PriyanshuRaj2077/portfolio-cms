@@ -131,10 +131,18 @@ const App = {
     const avatarContainer = document.querySelector('.hero-image-container');
     if (avatarElem) {
       if (profile.avatarUrl && typeof profile.avatarUrl === 'string' && profile.avatarUrl.trim() !== '') {
-        avatarElem.src = profile.avatarUrl.trim();
-        avatarElem.alt = name ? `${name} Avatar` : 'Profile Avatar';
-        avatarElem.style.display = 'block';
-        if (avatarContainer) avatarContainer.classList.add('has-image');
+        const safeAvatar = Renderer.sanitizeUrl(profile.avatarUrl.trim());
+        if (safeAvatar && safeAvatar !== '#') {
+          avatarElem.src = safeAvatar;
+          avatarElem.alt = name ? `${name} Avatar` : 'Profile Avatar';
+          avatarElem.style.display = 'block';
+          if (avatarContainer) avatarContainer.classList.add('has-image');
+        } else {
+          avatarElem.src = '';
+          avatarElem.alt = '';
+          avatarElem.style.display = 'none';
+          if (avatarContainer) avatarContainer.classList.remove('has-image');
+        }
       } else {
         avatarElem.src = '';
         avatarElem.alt = '';
@@ -215,13 +223,40 @@ const App = {
       navContainer.innerHTML = '';
     }
 
+    const usedLetters = new Set();
+
     sections.forEach(section => {
       // 1. Create section DOM node
       const sectionNode = Renderer.renderSection(section, data);
       container.appendChild(sectionNode);
 
-      // 2. Resolve single navigation letter (A, E, T, P, B, C...)
-      const letter = Renderer.getSectionNavLetter(section);
+      // 2. Resolve single uppercase navigation letter (A-Z) with deterministic duplicate fallback
+      let letter = Renderer.getSectionNavLetter(section);
+      if (usedLetters.has(letter)) {
+        let resolved = null;
+        if (section.title) {
+          const chars = section.title.toUpperCase().replace(/[^A-Z]/g, '');
+          for (const c of chars) {
+            if (!usedLetters.has(c)) {
+              resolved = c;
+              break;
+            }
+          }
+        }
+        if (!resolved) {
+          for (let code = 65; code <= 90; code++) {
+            const c = String.fromCharCode(code);
+            if (!usedLetters.has(c)) {
+              resolved = c;
+              break;
+            }
+          }
+        }
+        if (resolved) {
+          letter = resolved;
+        }
+      }
+      usedLetters.add(letter);
 
       // 3. Create sidebar navigation item dynamically
       if (navContainer) {
