@@ -75,13 +75,14 @@
 
 .experience-role-company span.company {
   color: var(--text-secondary);
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .experience-date {
   font-family: var(--font-mono);
   font-size: 0.85rem;
-  color: var(--text-muted);
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .experience-desc {
@@ -107,7 +108,8 @@
   content: '—';
   position: absolute;
   left: 0;
-  color: var(--text-muted);
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 /* 3. TECH STACK / SKILLS SECTION */
@@ -126,9 +128,10 @@
 .techstack-cat-title {
   font-family: var(--font-mono);
   font-size: 0.78rem;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--text-muted);
+  color: var(--text-primary);
 }
 
 .techstack-items-grid {
@@ -141,7 +144,7 @@
 .techstack-item {
   font-family: var(--font-mono);
   font-size: 0.95rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-primary);
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -149,7 +152,7 @@
 }
 
 .techstack-item:hover {
-  color: #ffffff;
+  color: #FFFFFF;
 }
 
 /* 4. PROJECTS SECTION */
@@ -179,7 +182,8 @@
 .project-num {
   font-family: var(--font-mono);
   font-size: 0.85rem;
-  color: var(--text-muted);
+  font-weight: 600;
+  color: var(--text-primary);
   padding-top: 0.2rem;
 }
 
@@ -200,7 +204,7 @@
 }
 
 .project-editorial-item:hover .project-title-link {
-  color: #ffffff;
+  color: #FFFFFF;
 }
 
 .project-summary-text {
@@ -218,7 +222,8 @@
 .project-tech-tag {
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  color: var(--text-muted);
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .project-arrow-links {
@@ -231,12 +236,13 @@
 .project-action-link {
   font-family: var(--font-mono);
   font-size: 0.85rem;
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: var(--text-primary);
   transition: color var(--transition-fast);
 }
 
 .project-action-link:hover {
-  color: var(--text-primary);
+  color: #FFFFFF;
 }
 
 /* 5. BLOG SECTION */
@@ -267,7 +273,8 @@
 .blog-num {
   font-family: var(--font-mono);
   font-size: 0.85rem;
-  color: var(--text-muted);
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .blog-main {
@@ -284,7 +291,7 @@
 }
 
 .blog-editorial-item:hover .blog-editorial-title {
-  color: #ffffff;
+  color: #FFFFFF;
 }
 
 .blog-editorial-summary {
@@ -295,7 +302,8 @@
 .blog-date-meta {
   font-family: var(--font-mono);
   font-size: 0.82rem;
-  color: var(--text-muted);
+  font-weight: 600;
+  color: var(--text-primary);
   text-align: right;
   white-space: nowrap;
 }
@@ -324,17 +332,20 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.85rem 1.1rem;
-  border: 1px solid var(--border-light);
+  border: 1.5px solid #000000;
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: 0.9rem;
-  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+  font-weight: 600;
+  background: transparent;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .contact-item-link:hover {
-  border-color: var(--border-medium);
-  background-color: var(--bg-card-hover);
+  border-color: #000000;
+  background-color: #000000;
+  color: #FFFFFF;
 }
 
 /* ==========================================================================
@@ -358,13 +369,14 @@
   gap: 0.5rem;
   font-family: var(--font-mono);
   font-size: 0.88rem;
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: var(--text-primary);
   transition: color var(--transition-fast);
   cursor: pointer;
 }
 
 .article-back-link:hover {
-  color: var(--text-primary);
+  color: #FFFFFF;
 }
 
 .article-page-header {
@@ -378,11 +390,13 @@
   gap: 1rem;
   font-family: var(--font-mono);
   font-size: 0.85rem;
-  color: var(--text-muted);
+  font-weight: 600;
+  color: var(--text-primary);
   margin-bottom: 0.85rem;
 }
 
 .article-page-title {
+  font-family: var(--font-display);
   font-size: clamp(2.2rem, 5vw, 3.4rem);
   font-weight: 700;
   line-height: 1.12;
@@ -407,15 +421,16 @@
 .article-page-tag {
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  color: var(--text-muted);
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
+  font-weight: 600;
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid var(--text-primary);
   padding: 0.2rem 0.6rem;
   border-radius: var(--radius-xs);
 }
 
 .article-page-body {
-  color: #d0d0d5;
+  color: var(--text-secondary);
   line-height: 1.85;
   font-size: 1.05rem;
   font-family: var(--font-body);
@@ -425,6 +440,7 @@
 .article-page-body h2,
 .article-page-body h3,
 .article-page-body h4 {
+  font-family: var(--font-display);
   color: var(--text-primary);
   margin-top: 2rem;
   margin-bottom: 0.85rem;
@@ -438,13 +454,13 @@
 
 .article-page-body p {
   margin-bottom: 1.35rem;
-  color: #c4c4c8;
+  color: var(--text-secondary);
 }
 
 .article-page-body strong,
 .article-page-body b {
-  color: #ffffff;
-  font-weight: 600;
+  color: #000000;
+  font-weight: 700;
 }
 
 .article-page-body em,
@@ -459,11 +475,11 @@
 
 .article-page-body li {
   margin-bottom: 0.45rem;
-  color: #c4c4c8;
+  color: var(--text-secondary);
 }
 
 .article-page-body blockquote {
-  border-left: 2px solid var(--border-medium);
+  border-left: 2px solid var(--text-primary);
   padding-left: 1.25rem;
   margin: 1.5rem 0;
   color: var(--text-secondary);
@@ -471,8 +487,8 @@
 }
 
 .article-page-body pre {
-  background: #141416;
-  border: 1px solid var(--border-light);
+  background: #000000;
+  border: 1px solid rgba(0, 0, 0, 0.3);
   border-radius: var(--radius-sm);
   padding: 1.25rem;
   overflow-x: auto;
@@ -482,14 +498,17 @@
 .article-page-body code {
   font-family: var(--font-mono);
   font-size: 0.88em;
-  background: rgba(255, 255, 255, 0.08);
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.15);
   padding: 0.2em 0.45em;
   border-radius: var(--radius-xs);
-  color: #ededed;
+  color: var(--text-primary);
 }
 
 .article-page-body pre code {
   background: transparent;
+  color: #FFFFFF;
+  font-weight: 400;
   padding: 0;
 }
 
@@ -500,8 +519,13 @@
 }
 
 .article-page-body a {
-  color: #ffffff;
+  color: var(--text-primary);
+  font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.article-page-body a:hover {
+  color: #FFFFFF;
 }
 

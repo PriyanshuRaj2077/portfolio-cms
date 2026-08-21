@@ -28,8 +28,8 @@ body {
 }
 
 ::selection {
-  background-color: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
+  background-color: #000000;
+  color: #FFFFFF;
 }
 
 /* Custom Minimal Scrollbar */
@@ -40,11 +40,11 @@ body {
   background: var(--bg-primary);
 }
 ::-webkit-scrollbar-thumb {
-  background: #1c1c1e;
+  background: #000000;
   border-radius: var(--radius-full);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2c2c2e;
+  background: #000000;
 }
 
 /* Typography Base */
@@ -96,8 +96,8 @@ a {
   bottom: 0;
   width: var(--sidebar-width-collapsed);
   z-index: 1000;
-  background: #0b0b0b;
-  border-right: 1px solid var(--border-light);
+  background: #000000;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -110,7 +110,7 @@ a {
 /* Desktop Hover Expansion (150-250ms) */
 .mac-sidebar:hover {
   width: 210px;
-  background: #0f0f0f;
+  background: #000000;
   box-shadow: 10px 0 30px rgba(0, 0, 0, 0.6);
 }
 
@@ -123,7 +123,7 @@ a {
   display: flex;
   align-items: center;
   gap: 1rem;
-  color: var(--text-primary);
+  color: #FFFFFF;
   font-size: 1.1rem;
   font-family: var(--font-mono);
 }
@@ -150,7 +150,7 @@ a {
   align-items: center;
   gap: 1.1rem;
   padding: 0.75rem 1.35rem;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.7);
   font-size: 0.88rem;
   font-weight: 500;
   transition: color var(--transition-fast), background-color var(--transition-fast);
@@ -159,9 +159,9 @@ a {
 
 .sidebar-link:hover,
 .sidebar-link.active {
-  color: var(--text-primary);
-  background: var(--bg-subtle);
-  border-left-color: var(--text-primary);
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.15);
+  border-left-color: #FFFFFF;
 }
 
 .sidebar-letter {
@@ -173,14 +173,14 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
+  color: #FFFFFF;
   flex-shrink: 0;
   transition: color var(--transition-fast);
 }
 
 .sidebar-link:hover .sidebar-letter,
 .sidebar-link.active .sidebar-letter {
-  color: var(--text-primary);
+  color: #FFFFFF;
 }
 
 .sidebar-label {
@@ -189,6 +189,7 @@ a {
   transition: opacity var(--transition-smooth), transform var(--transition-smooth);
   font-size: 0.85rem;
   letter-spacing: 0.02em;
+  color: #FFFFFF;
 }
 
 .mac-sidebar:hover .sidebar-label {
@@ -215,13 +216,15 @@ a {
 .section-label-number {
   font-family: var(--font-mono);
   font-size: 0.8rem;
-  color: var(--text-muted);
+  font-weight: 600;
+  color: var(--text-primary);
   letter-spacing: 0.1em;
   margin-bottom: 0.5rem;
   display: block;
 }
 
 .section-title {
+  font-family: var(--font-display);
   font-size: clamp(1.8rem, 3.5vw, 2.75rem);
   font-weight: 700;
   color: var(--text-primary);
@@ -243,16 +246,17 @@ a {
   gap: 0.5rem;
   padding: 0.7rem 1.4rem;
   font-family: var(--font-body);
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.9rem;
   border-radius: var(--radius-sm);
-  background: var(--text-primary);
-  color: var(--text-inverse);
-  transition: opacity var(--transition-fast);
+  background: #000000;
+  color: #FFFFFF;
+  transition: background-color var(--transition-fast), opacity var(--transition-fast);
 }
 
 .btn-minimal:hover {
-  opacity: 0.88;
+  background: #000000;
+  opacity: 0.92;
 }
 
 .btn-minimal-muted {
@@ -261,18 +265,19 @@ a {
   gap: 0.5rem;
   padding: 0.7rem 1.4rem;
   font-family: var(--font-body);
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.9rem;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border-medium);
-  color: var(--text-secondary);
+  border: 1.5px solid #000000;
+  color: #000000;
   background: transparent;
-  transition: color var(--transition-fast), border-color var(--transition-fast);
+  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .btn-minimal-muted:hover {
-  color: var(--text-primary);
-  border-color: var(--text-primary);
+  color: #FFFFFF;
+  background: #000000;
+  border-color: #000000;
 }
 
 /* Modal Overlay for Blogs */
@@ -300,16 +305,16 @@ a {
 }
 
 .modal-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-medium);
-  border-radius: var(--radius-lg);
+  background: #E84025;
+  border: 1px solid #000000;
+  border-radius: var(--radius-sm);
   max-width: 760px;
   width: 100%;
   max-height: 85vh;
   overflow-y: auto;
   padding: var(--space-lg);
   position: relative;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
 }
 
 .modal-close {
@@ -318,14 +323,14 @@ a {
   right: 1.5rem;
   background: transparent;
   border: none;
-  color: var(--text-muted);
+  color: #000000;
   font-size: 1.25rem;
   cursor: pointer;
   transition: color var(--transition-fast);
 }
 
 .modal-close:hover {
-  color: var(--text-primary);
+  color: #FFFFFF;
 }
 
 /* Footer */
@@ -340,6 +345,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: var(--text-muted);
+  color: var(--text-primary);
+  font-weight: 500;
   font-size: 0.88rem;
 }

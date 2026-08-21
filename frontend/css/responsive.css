@@ -57,9 +57,9 @@
     justify-content: space-between;
     padding: 0 1rem;
     border-right: none;
-    border-bottom: 1px solid var(--border-light);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: none !important;
-    background: #0b0b0b;
+    background: #000000;
   }
 
   .sidebar-top {
@@ -81,11 +81,17 @@
     padding: 0.4rem 0.6rem;
     border-left: none;
     border-bottom: 2px solid transparent;
+    color: rgba(255, 255, 255, 0.7);
   }
 
   .sidebar-link.active {
     border-left: none;
-    border-bottom-color: var(--text-primary);
+    border-bottom-color: #FFFFFF;
+    color: #FFFFFF;
+  }
+
+  .sidebar-letter {
+    color: #FFFFFF;
   }
 
   .sidebar-label {
