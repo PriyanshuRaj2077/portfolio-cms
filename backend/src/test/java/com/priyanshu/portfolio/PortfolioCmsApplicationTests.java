@@ -26,6 +26,8 @@ import com.priyanshu.portfolio.repository.SectionRepository;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.test.context.ActiveProfiles;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -33,8 +35,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = {
         "admin.username=testadmin",
-        "admin.initial-password=SecurePass123!"
+        "admin.initial-password=SecurePass123!",
+        "portfolio.publish.output-dir=target/test-data/published/default",
+        "portfolio.media.output-dir=target/test-media"
 })
+@ActiveProfiles("test")
 @AutoConfigureMockMvc
 class PortfolioCmsApplicationTests {
 

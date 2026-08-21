@@ -319,11 +319,12 @@ public class AdminApiController {
             String cleanName = originalName.replaceAll("[^a-zA-Z0-9.-]", "_");
             String storedFileName = UUID.randomUUID().toString().substring(0, 8) + "_" + cleanName;
 
-            storageService.saveMedia(storedFileName, file.getBytes());
+            storageService.saveMedia(storedFileName, file.getBytes(), file.getContentType());
+            String publicMediaUrl = storageService.getMediaUrl(storedFileName);
 
             MediaEntity media = MediaEntity.builder()
                     .fileName(storedFileName)
-                    .fileUrl("/media/" + storedFileName)
+                    .fileUrl(publicMediaUrl)
                     .mimeType(file.getContentType())
                     .fileSize(file.getSize())
                     .build();

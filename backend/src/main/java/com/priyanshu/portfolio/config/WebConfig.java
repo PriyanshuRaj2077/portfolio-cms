@@ -1,14 +1,49 @@
 package com.priyanshu.portfolio.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.web.servlet.config.annotation.*;
 import org.springframework.web.servlet.resource.PathResourceResolver;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+
+    @Value("${portfolio.cors.frontend-origin:}")
+    private String frontendOrigin;
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        List<String> allowedOrigins = new ArrayList<>();
+        if (frontendOrigin != null && !frontendOrigin.isBlank()) {
+            String[] origins = frontendOrigin.split(",");
+            for (String origin : origins) {
+                if (!origin.trim().isEmpty()) {
+                    allowedOrigins.add(origin.trim());
+                }
+            }
+        }
+
+        if (allowedOrigins.isEmpty()) {
+            allowedOrigins = List.of(
+                    "http://localhost:3000",
+                    "http://localhost:8080",
+                    "http://127.0.0.1:5500",
+                    "http://localhost:5173"
+            );
+        }
+
+        registry.addMapping("/**")
+                .allowedOrigins(allowedOrigins.toArray(new String[0]))
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD")
+                .allowedHeaders("*")
+                .allowCredentials(true)
+                .maxAge(3600);
+    }
 
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
@@ -67,5 +102,3 @@ public class WebConfig implements WebMvcConfigurer {
                 });
     }
 }
-
-

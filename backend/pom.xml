@@ -60,6 +60,13 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
+        <!-- AWS SDK v2 S3 (Cloudflare R2 Object Storage) -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>2.25.16</version>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
