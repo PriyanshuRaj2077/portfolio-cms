@@ -1,6 +1,6 @@
 package com.priyanshu.portfolio.storage;
 
-import com.priyanshu.portfolio.service.R2StorageService;
+import com.priyanshu.portfolio.service.SupabaseStorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,25 +17,25 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-class R2StorageServiceTest {
+class SupabaseStorageServiceTest {
 
     private S3Client s3Client;
-    private R2StorageService r2StorageService;
-    private final String bucketName = "portfolio-bucket";
-    private final String publicBaseUrl = "https://pub-r2.example.com";
+    private SupabaseStorageService supabaseStorageService;
+    private final String bucketName = "portfolio";
+    private final String publicBaseUrl = "https://xyz.supabase.co/storage/v1/object/public/portfolio";
 
     @BeforeEach
     void setUp() {
         s3Client = mock(S3Client.class);
-        r2StorageService = new R2StorageService(s3Client, bucketName, publicBaseUrl);
+        supabaseStorageService = new SupabaseStorageService(s3Client, bucketName, publicBaseUrl);
     }
 
     @Test
-    @DisplayName("saveFile uploads published JSON with correct R2 key, application/json Content-Type, and cache headers")
+    @DisplayName("saveFile uploads published JSON with correct Supabase key, application/json Content-Type, and cache headers")
     void testSaveFilePublishedJson() throws Exception {
         byte[] content = "{\"version\":2}".getBytes(StandardCharsets.UTF_8);
 
-        r2StorageService.saveFile("profile.v2.json", content);
+        supabaseStorageService.saveFile("profile.v2.json", content);
 
         ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
         ArgumentCaptor<RequestBody> bodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
@@ -58,7 +58,7 @@ class R2StorageServiceTest {
     void testSaveFileManifestJson() throws Exception {
         byte[] content = "{\"version\":2}".getBytes(StandardCharsets.UTF_8);
 
-        r2StorageService.saveFile("manifest.json", content);
+        supabaseStorageService.saveFile("manifest.json", content);
 
         ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
         verify(s3Client).putObject(requestCaptor.capture(), any(RequestBody.class));
@@ -70,7 +70,7 @@ class R2StorageServiceTest {
     }
 
     @Test
-    @DisplayName("readFile returns byte content when object exists in R2")
+    @DisplayName("readFile returns byte content when object exists in Supabase storage")
     void testReadFileSuccess() throws Exception {
         byte[] expected = "{\"data\":\"test\"}".getBytes(StandardCharsets.UTF_8);
 
@@ -79,7 +79,7 @@ class R2StorageServiceTest {
 
         when(s3Client.getObjectAsBytes(any(GetObjectRequest.class))).thenReturn(responseBytes);
 
-        byte[] result = r2StorageService.readFile("profile.v1.json");
+        byte[] result = supabaseStorageService.readFile("profile.v1.json");
 
         assertNotNull(result);
         assertArrayEquals(expected, result);
@@ -96,7 +96,7 @@ class R2StorageServiceTest {
         when(s3Client.getObjectAsBytes(any(GetObjectRequest.class)))
                 .thenThrow(NoSuchKeyException.builder().message("Key not found").build());
 
-        byte[] result = r2StorageService.readFile("nonexistent.json");
+        byte[] result = supabaseStorageService.readFile("nonexistent.json");
         assertNull(result);
     }
 
@@ -106,7 +106,7 @@ class R2StorageServiceTest {
         HeadObjectResponse headResponse = HeadObjectResponse.builder().contentLength(1024L).build();
         when(s3Client.headObject(any(HeadObjectRequest.class))).thenReturn(headResponse);
 
-        boolean exists = r2StorageService.verifyFileExists("manifest.json");
+        boolean exists = supabaseStorageService.verifyFileExists("manifest.json");
         assertTrue(exists);
     }
 
@@ -116,7 +116,7 @@ class R2StorageServiceTest {
         when(s3Client.headObject(any(HeadObjectRequest.class)))
                 .thenThrow(NoSuchKeyException.builder().message("Not found").build());
 
-        boolean exists = r2StorageService.verifyFileExists("missing.json");
+        boolean exists = supabaseStorageService.verifyFileExists("missing.json");
         assertFalse(exists);
     }
 
@@ -126,7 +126,7 @@ class R2StorageServiceTest {
         byte[] imageBytes = new byte[]{1, 2, 3, 4};
         String fileName = "avatar.png";
 
-        r2StorageService.saveMedia(fileName, imageBytes, "image/png");
+        supabaseStorageService.saveMedia(fileName, imageBytes, "image/png");
 
         ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
         verify(s3Client).putObject(requestCaptor.capture(), any(RequestBody.class));
@@ -139,20 +139,99 @@ class R2StorageServiceTest {
     }
 
     @Test
-    @DisplayName("getMediaUrl and getPublishBaseUrl generate correct CDN URLs")
+    @DisplayName("saveMedia single-arg overload defaults content type to application/octet-stream")
+    void testSaveMediaDefaultContentType() throws Exception {
+        byte[] imageBytes = new byte[]{1, 2, 3, 4};
+        String fileName = "binary.dat";
+
+        supabaseStorageService.saveMedia(fileName, imageBytes);
+
+        ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+        verify(s3Client).putObject(requestCaptor.capture(), any(RequestBody.class));
+
+        PutObjectRequest req = requestCaptor.getValue();
+        assertEquals(bucketName, req.bucket());
+        assertEquals("media/binary.dat", req.key());
+        assertEquals("application/octet-stream", req.contentType());
+    }
+
+    @Test
+    @DisplayName("readFile returns null on S3Exception with 404 status code")
+    void testReadFileS3Exception404() throws Exception {
+        S3Exception ex404 = (S3Exception) S3Exception.builder().statusCode(404).message("Not Found").build();
+        when(s3Client.getObjectAsBytes(any(GetObjectRequest.class))).thenThrow(ex404);
+
+        byte[] result = supabaseStorageService.readFile("missing.json");
+        assertNull(result);
+    }
+
+    @Test
+    @DisplayName("readFile rethrows S3Exception on server error (500)")
+    void testReadFileS3Exception500() {
+        S3Exception ex500 = (S3Exception) S3Exception.builder().statusCode(500).message("Internal Error").build();
+        when(s3Client.getObjectAsBytes(any(GetObjectRequest.class))).thenThrow(ex500);
+
+        assertThrows(S3Exception.class, () -> supabaseStorageService.readFile("error.json"));
+    }
+
+    @Test
+    @DisplayName("verifyFileExists returns false on S3Exception with 404 status")
+    void testVerifyFileExistsS3Exception404() {
+        S3Exception ex404 = (S3Exception) S3Exception.builder().statusCode(404).message("Not Found").build();
+        when(s3Client.headObject(any(HeadObjectRequest.class))).thenThrow(ex404);
+
+        boolean exists = supabaseStorageService.verifyFileExists("missing.json");
+        assertFalse(exists);
+    }
+
+    @Test
+    @DisplayName("getMediaUrl and getPublishBaseUrl generate correct Supabase Storage public URLs")
     void testUrlGeneration() {
-        assertEquals("https://pub-r2.example.com/media/photo.jpg", r2StorageService.getMediaUrl("photo.jpg"));
-        assertEquals("https://pub-r2.example.com/data/published/default", r2StorageService.getPublishBaseUrl());
+        assertEquals("https://xyz.supabase.co/storage/v1/object/public/portfolio/media/photo.jpg",
+                supabaseStorageService.getMediaUrl("photo.jpg"));
+        assertEquals("https://xyz.supabase.co/storage/v1/object/public/portfolio/data/published/default",
+                supabaseStorageService.getPublishBaseUrl());
+    }
+
+    @Test
+    @DisplayName("derivePublicBaseUrl correctly formats URLs across various endpoint conventions")
+    void testDerivePublicBaseUrl() {
+        assertEquals("https://xyz.supabase.co/storage/v1/object/public/portfolio",
+                SupabaseStorageService.derivePublicBaseUrl("https://xyz.supabase.co/storage/v1/s3", "portfolio"));
+
+        assertEquals("https://xyz.supabase.co/storage/v1/object/public/portfolio",
+                SupabaseStorageService.derivePublicBaseUrl("https://xyz.supabase.co/storage/v1/s3/", "portfolio"));
+
+        assertEquals("https://xyz.supabase.co/storage/v1/object/public/portfolio",
+                SupabaseStorageService.derivePublicBaseUrl("https://xyz.supabase.co", "portfolio"));
+
+        assertEquals("http://localhost:8000/storage/v1/object/public/portfolio",
+                SupabaseStorageService.derivePublicBaseUrl("http://localhost:8000/storage/v1/s3", "portfolio"));
+
+        assertEquals("",
+                SupabaseStorageService.derivePublicBaseUrl(null, "portfolio"));
+
+        assertEquals("",
+                SupabaseStorageService.derivePublicBaseUrl("   ", "portfolio"));
     }
 
     @Test
     @DisplayName("deleteMedia invokes S3Client deleteObject")
     void testDeleteMedia() throws Exception {
-        boolean result = r2StorageService.deleteMedia("photo.jpg");
+        boolean result = supabaseStorageService.deleteMedia("photo.jpg");
 
         assertTrue(result);
         ArgumentCaptor<DeleteObjectRequest> captor = ArgumentCaptor.forClass(DeleteObjectRequest.class);
         verify(s3Client).deleteObject(captor.capture());
         assertEquals("media/photo.jpg", captor.getValue().key());
+    }
+
+    @Test
+    @DisplayName("deleteMedia returns false when S3Client throws exception")
+    void testDeleteMediaFailure() throws Exception {
+        doThrow(new RuntimeException("S3 Delete Failure")).when(s3Client).deleteObject(any(DeleteObjectRequest.class));
+
+        boolean result = supabaseStorageService.deleteMedia("photo.jpg");
+        assertFalse(result);
     }
 }

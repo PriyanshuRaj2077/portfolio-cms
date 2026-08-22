@@ -76,10 +76,10 @@ class PublicContentControllerTest {
     @Test
     @DisplayName("GET /media/{filename} redirects (302) when CDN URL is available")
     void testMediaRedirectToCdn() throws Exception {
-        when(storageService.getMediaUrl("photo.png")).thenReturn("https://pub-r2.example.com/media/photo.png");
+        when(storageService.getMediaUrl("photo.png")).thenReturn("https://xyz.supabase.co/storage/v1/object/public/portfolio/media/photo.png");
 
         mockMvc.perform(get("/media/photo.png"))
                 .andExpect(status().isFound())
-                .andExpect(header().string("Location", "https://pub-r2.example.com/media/photo.png"));
+                .andExpect(header().string("Location", "https://xyz.supabase.co/storage/v1/object/public/portfolio/media/photo.png"));
     }
 }

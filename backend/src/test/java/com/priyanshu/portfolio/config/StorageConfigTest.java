@@ -1,8 +1,8 @@
 package com.priyanshu.portfolio.config;
 
 import com.priyanshu.portfolio.service.LocalStorageService;
-import com.priyanshu.portfolio.service.R2StorageService;
 import com.priyanshu.portfolio.service.StorageService;
+import com.priyanshu.portfolio.service.SupabaseStorageService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.Environment;
@@ -31,39 +31,72 @@ class StorageConfigTest {
     }
 
     @Test
-    @DisplayName("StorageConfig fails fast in production when R2 environment variables are missing")
-    void testProductionFailsFastWithoutR2Variables() {
+    @DisplayName("StorageConfig fails fast in production when Supabase S3 environment variables are missing")
+    void testProductionFailsFastWithoutSupabaseVariables() {
         StorageConfig config = new StorageConfig();
-        // Leave R2 fields empty/blank
+        // Leave Supabase fields empty/blank
 
         Environment env = mock(Environment.class);
         when(env.getActiveProfiles()).thenReturn(new String[]{"prod"});
 
         IllegalStateException ex = assertThrows(IllegalStateException.class, () -> config.storageService(env));
         assertTrue(ex.getMessage().contains("FATAL PRODUCTION STORAGE CONFIGURATION"));
-        assertTrue(ex.getMessage().contains("R2_ENDPOINT"));
-        assertTrue(ex.getMessage().contains("R2_ACCESS_KEY_ID"));
-        assertTrue(ex.getMessage().contains("R2_SECRET_ACCESS_KEY"));
-        assertTrue(ex.getMessage().contains("R2_BUCKET"));
-        assertTrue(ex.getMessage().contains("R2_PUBLIC_BASE_URL"));
+        assertTrue(ex.getMessage().contains("SUPABASE_S3_ENDPOINT"));
+        assertTrue(ex.getMessage().contains("SUPABASE_S3_REGION"));
+        assertTrue(ex.getMessage().contains("SUPABASE_S3_ACCESS_KEY_ID"));
+        assertTrue(ex.getMessage().contains("SUPABASE_S3_SECRET_ACCESS_KEY"));
+        assertTrue(ex.getMessage().contains("SUPABASE_S3_BUCKET"));
     }
 
     @Test
-    @DisplayName("StorageConfig constructs R2StorageService when in production and all R2 variables are set")
-    void testProductionConstructsR2StorageService() {
+    @DisplayName("StorageConfig constructs SupabaseStorageService when in production and all Supabase variables are set")
+    void testProductionConstructsSupabaseStorageService() {
         StorageConfig config = new StorageConfig();
-        ReflectionTestUtils.setField(config, "r2Endpoint", "https://123456789.r2.cloudflarestorage.com");
-        ReflectionTestUtils.setField(config, "r2AccessKeyId", "dummyAccessKey");
-        ReflectionTestUtils.setField(config, "r2SecretAccessKey", "dummySecretKey");
-        ReflectionTestUtils.setField(config, "r2Bucket", "my-portfolio-bucket");
-        ReflectionTestUtils.setField(config, "r2PublicBaseUrl", "https://pub-r2.example.com");
+        ReflectionTestUtils.setField(config, "supabaseEndpoint", "https://xyz.supabase.co/storage/v1/s3");
+        ReflectionTestUtils.setField(config, "supabaseRegion", "us-east-1");
+        ReflectionTestUtils.setField(config, "supabaseAccessKeyId", "dummyAccessKey");
+        ReflectionTestUtils.setField(config, "supabaseSecretAccessKey", "dummySecretKey");
+        ReflectionTestUtils.setField(config, "supabaseBucket", "portfolio");
 
         Environment env = mock(Environment.class);
         when(env.getActiveProfiles()).thenReturn(new String[]{"prod"});
 
         StorageService service = config.storageService(env);
         assertNotNull(service);
-        assertInstanceOf(R2StorageService.class, service);
-        assertEquals("https://pub-r2.example.com/media/test.png", service.getMediaUrl("test.png"));
+        assertInstanceOf(SupabaseStorageService.class, service);
+        assertEquals("https://xyz.supabase.co/storage/v1/object/public/portfolio/media/test.png", service.getMediaUrl("test.png"));
+    }
+    @Test
+    @DisplayName("StorageConfig returns LocalStorageService when test profile is active")
+    void testTestProfileActivatesLocalStorageService() {
+        StorageConfig config = new StorageConfig();
+        ReflectionTestUtils.setField(config, "localOutputDir", "target/test-out");
+        ReflectionTestUtils.setField(config, "localMediaDir", "target/test-media");
+        ReflectionTestUtils.setField(config, "localPublishPublicBaseUrl", "/data/published/default");
+        ReflectionTestUtils.setField(config, "localMediaPublicBaseUrl", "/media");
+
+        Environment env = mock(Environment.class);
+        when(env.getActiveProfiles()).thenReturn(new String[]{"test"});
+
+        StorageService service = config.storageService(env);
+        assertNotNull(service);
+        assertInstanceOf(LocalStorageService.class, service);
+    }
+
+    @Test
+    @DisplayName("StorageConfig fails fast when specific Supabase environment variable is missing")
+    void testProductionFailsFastWhenSingleVariableMissing() {
+        StorageConfig config = new StorageConfig();
+        ReflectionTestUtils.setField(config, "supabaseEndpoint", "https://xyz.supabase.co/storage/v1/s3");
+        ReflectionTestUtils.setField(config, "supabaseRegion", "us-east-1");
+        ReflectionTestUtils.setField(config, "supabaseAccessKeyId", "dummyAccessKey");
+        ReflectionTestUtils.setField(config, "supabaseSecretAccessKey", "dummySecretKey");
+        // Leave supabaseBucket null/blank
+
+        Environment env = mock(Environment.class);
+        when(env.getActiveProfiles()).thenReturn(new String[]{"prod"});
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> config.storageService(env));
+        assertTrue(ex.getMessage().contains("SUPABASE_S3_BUCKET"));
     }
 }

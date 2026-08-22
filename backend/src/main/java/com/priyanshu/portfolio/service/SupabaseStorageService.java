@@ -13,32 +13,35 @@ import software.amazon.awssdk.services.s3.model.*;
 
 import java.net.URI;
 
-public class R2StorageService implements StorageService {
+public class SupabaseStorageService implements StorageService {
 
-    private static final Logger log = LoggerFactory.getLogger(R2StorageService.class);
+    private static final Logger log = LoggerFactory.getLogger(SupabaseStorageService.class);
 
     private final S3Client s3Client;
     private final String bucket;
     private final String publicBaseUrl;
 
-    public R2StorageService(
+    public SupabaseStorageService(
             String endpoint,
+            String region,
             String accessKeyId,
             String secretAccessKey,
-            String bucket,
-            String publicBaseUrl
+            String bucket
     ) {
-        this.bucket = bucket.trim();
-        this.publicBaseUrl = publicBaseUrl != null ? publicBaseUrl.trim().replaceAll("/+$", "") : "";
+        this.bucket = bucket != null ? bucket.trim() : "";
+        String trimmedEndpoint = endpoint != null ? endpoint.trim() : "";
+        String trimmedRegion = region != null ? region.trim() : "us-east-1";
+        this.publicBaseUrl = derivePublicBaseUrl(trimmedEndpoint, this.bucket);
 
-        log.info("Initializing Cloudflare R2 Storage Service for bucket: {} at endpoint: {}", this.bucket, endpoint);
+        log.info("Initializing Supabase S3 Storage Service for bucket: '{}' at endpoint: '{}' (region: '{}')",
+                this.bucket, trimmedEndpoint, trimmedRegion);
 
         this.s3Client = S3Client.builder()
-                .endpointOverride(URI.create(endpoint.trim()))
+                .endpointOverride(URI.create(trimmedEndpoint))
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(accessKeyId.trim(), secretAccessKey.trim())
                 ))
-                .region(Region.of("auto"))
+                .region(Region.of(trimmedRegion))
                 .serviceConfiguration(S3Configuration.builder()
                         .pathStyleAccessEnabled(true)
                         .chunkedEncodingEnabled(false)
@@ -46,10 +49,30 @@ public class R2StorageService implements StorageService {
                 .build();
     }
 
-    public R2StorageService(S3Client s3Client, String bucket, String publicBaseUrl) {
+    public SupabaseStorageService(S3Client s3Client, String bucket, String publicBaseUrl) {
         this.s3Client = s3Client;
         this.bucket = bucket != null ? bucket.trim() : "";
         this.publicBaseUrl = publicBaseUrl != null ? publicBaseUrl.trim().replaceAll("/+$", "") : "";
+    }
+
+    public static String derivePublicBaseUrl(String endpoint, String bucket) {
+        if (endpoint == null || endpoint.isBlank()) {
+            return "";
+        }
+        String cleaned = endpoint.trim().replaceAll("/+$", "");
+        String bucketClean = bucket != null ? bucket.trim() : "";
+
+        if (cleaned.endsWith("/storage/v1/s3")) {
+            return cleaned.substring(0, cleaned.length() - "/storage/v1/s3".length())
+                    + "/storage/v1/object/public/" + bucketClean;
+        } else if (cleaned.endsWith("/s3")) {
+            return cleaned.substring(0, cleaned.length() - "/s3".length())
+                    + "/object/public/" + bucketClean;
+        } else if (!cleaned.contains("/storage/v1")) {
+            return cleaned + "/storage/v1/object/public/" + bucketClean;
+        } else {
+            return cleaned + "/object/public/" + bucketClean;
+        }
     }
 
     private String resolvePublishKey(String filename) {
@@ -76,7 +99,7 @@ public class R2StorageService implements StorageService {
                 .build();
 
         s3Client.putObject(request, RequestBody.fromBytes(content));
-        log.debug("Successfully saved published file to R2: {} ({} bytes)", key, content.length);
+        log.debug("Successfully saved published file to Supabase storage: {} ({} bytes)", key, content.length);
     }
 
     @Override
@@ -91,13 +114,13 @@ public class R2StorageService implements StorageService {
             ResponseBytes<GetObjectResponse> bytes = s3Client.getObjectAsBytes(request);
             return bytes.asByteArray();
         } catch (NoSuchKeyException e) {
-            log.debug("R2 object not found: {}", key);
+            log.debug("Supabase storage object not found: {}", key);
             return null;
         } catch (S3Exception e) {
             if (e.statusCode() == 404) {
                 return null;
             }
-            log.error("Error reading file from R2: {}", key, e);
+            log.error("Error reading file from Supabase storage: {}", key, e);
             throw e;
         }
     }
@@ -119,7 +142,7 @@ public class R2StorageService implements StorageService {
             if (e.statusCode() == 404) {
                 return false;
             }
-            log.warn("S3Exception verifying file existence in R2 for key: {}", key, e);
+            log.warn("S3Exception verifying file existence in Supabase storage for key: {}", key, e);
             return false;
         }
     }
@@ -144,7 +167,7 @@ public class R2StorageService implements StorageService {
                 .build();
 
         s3Client.putObject(request, RequestBody.fromBytes(content));
-        log.info("Successfully uploaded media to R2: {} ({}, {} bytes)", key, resolvedContentType, content.length);
+        log.info("Successfully uploaded media to Supabase storage: {} ({}, {} bytes)", key, resolvedContentType, content.length);
     }
 
     @Override
@@ -162,10 +185,10 @@ public class R2StorageService implements StorageService {
                     .build();
 
             s3Client.deleteObject(request);
-            log.info("Successfully deleted media from R2: {}", key);
+            log.info("Successfully deleted media from Supabase storage: {}", key);
             return true;
         } catch (Exception e) {
-            log.error("Failed to delete media from R2: {}", key, e);
+            log.error("Failed to delete media from Supabase storage: {}", key, e);
             return false;
         }
     }

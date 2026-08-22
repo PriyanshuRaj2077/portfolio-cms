@@ -60,7 +60,7 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
-        <!-- AWS SDK v2 S3 (Cloudflare R2 Object Storage) -->
+        <!-- AWS SDK v2 S3 (Supabase S3-Compatible Object Storage) -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>

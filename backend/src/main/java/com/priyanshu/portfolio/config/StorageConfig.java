@@ -1,8 +1,8 @@
 package com.priyanshu.portfolio.config;
 
 import com.priyanshu.portfolio.service.LocalStorageService;
-import com.priyanshu.portfolio.service.R2StorageService;
 import com.priyanshu.portfolio.service.StorageService;
+import com.priyanshu.portfolio.service.SupabaseStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,20 +20,20 @@ public class StorageConfig {
 
     private static final Logger log = LoggerFactory.getLogger(StorageConfig.class);
 
-    @Value("${portfolio.r2.endpoint:}")
-    private String r2Endpoint;
+    @Value("${portfolio.supabase.s3.endpoint:}")
+    private String supabaseEndpoint;
 
-    @Value("${portfolio.r2.access-key-id:}")
-    private String r2AccessKeyId;
+    @Value("${portfolio.supabase.s3.region:}")
+    private String supabaseRegion;
 
-    @Value("${portfolio.r2.secret-access-key:}")
-    private String r2SecretAccessKey;
+    @Value("${portfolio.supabase.s3.access-key-id:}")
+    private String supabaseAccessKeyId;
 
-    @Value("${portfolio.r2.bucket:}")
-    private String r2Bucket;
+    @Value("${portfolio.supabase.s3.secret-access-key:}")
+    private String supabaseSecretAccessKey;
 
-    @Value("${portfolio.r2.public-base-url:}")
-    private String r2PublicBaseUrl;
+    @Value("${portfolio.supabase.s3.bucket:}")
+    private String supabaseBucket;
 
     @Value("${portfolio.publish.output-dir:../frontend/data/published/default}")
     private String localOutputDir;
@@ -65,29 +65,29 @@ public class StorageConfig {
             );
         }
 
-        // Production Profile - Cloudflare R2 is STRICTLY REQUIRED
+        // Production Profile - Supabase S3 Storage is STRICTLY REQUIRED
         List<String> missingConfigs = new ArrayList<>();
-        if (r2Endpoint == null || r2Endpoint.isBlank()) missingConfigs.add("R2_ENDPOINT (portfolio.r2.endpoint)");
-        if (r2AccessKeyId == null || r2AccessKeyId.isBlank()) missingConfigs.add("R2_ACCESS_KEY_ID (portfolio.r2.access-key-id)");
-        if (r2SecretAccessKey == null || r2SecretAccessKey.isBlank()) missingConfigs.add("R2_SECRET_ACCESS_KEY (portfolio.r2.secret-access-key)");
-        if (r2Bucket == null || r2Bucket.isBlank()) missingConfigs.add("R2_BUCKET (portfolio.r2.bucket)");
-        if (r2PublicBaseUrl == null || r2PublicBaseUrl.isBlank()) missingConfigs.add("R2_PUBLIC_BASE_URL (portfolio.r2.public-base-url)");
+        if (supabaseEndpoint == null || supabaseEndpoint.isBlank()) missingConfigs.add("SUPABASE_S3_ENDPOINT (portfolio.supabase.s3.endpoint)");
+        if (supabaseRegion == null || supabaseRegion.isBlank()) missingConfigs.add("SUPABASE_S3_REGION (portfolio.supabase.s3.region)");
+        if (supabaseAccessKeyId == null || supabaseAccessKeyId.isBlank()) missingConfigs.add("SUPABASE_S3_ACCESS_KEY_ID (portfolio.supabase.s3.access-key-id)");
+        if (supabaseSecretAccessKey == null || supabaseSecretAccessKey.isBlank()) missingConfigs.add("SUPABASE_S3_SECRET_ACCESS_KEY (portfolio.supabase.s3.secret-access-key)");
+        if (supabaseBucket == null || supabaseBucket.isBlank()) missingConfigs.add("SUPABASE_S3_BUCKET (portfolio.supabase.s3.bucket)");
 
         if (!missingConfigs.isEmpty()) {
             throw new IllegalStateException(
-                "FATAL PRODUCTION STORAGE CONFIGURATION: Cloudflare R2 is strictly required for production storage. " +
+                "FATAL PRODUCTION STORAGE CONFIGURATION: Supabase S3 Storage is strictly required for production storage. " +
                 "Local filesystem persistence is disallowed in production. Missing required environment variables: " +
                 missingConfigs
             );
         }
 
-        log.info("Configuring Production Cloudflare R2 Storage Service for bucket '{}'", r2Bucket);
-        return new R2StorageService(
-                r2Endpoint,
-                r2AccessKeyId,
-                r2SecretAccessKey,
-                r2Bucket,
-                r2PublicBaseUrl
+        log.info("Configuring Production Supabase S3 Storage Service for bucket '{}'", supabaseBucket);
+        return new SupabaseStorageService(
+                supabaseEndpoint,
+                supabaseRegion,
+                supabaseAccessKeyId,
+                supabaseSecretAccessKey,
+                supabaseBucket
         );
     }
 }
