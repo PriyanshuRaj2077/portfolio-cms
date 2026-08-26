@@ -8,6 +8,11 @@
  * In production (e.g. Vercel), dynamically resolves from window configuration
  * (e.g. Cloudflare R2 public URL or Render public endpoint).
  */
+
+ window.__PORTFOLIO_CONFIG__ = {
+   PUBLIC_CONTENT_BASE_URL: "https://portfolio-backend-u1na.onrender.com/data/published/default"
+ };
+
 const getResolvedContentBaseUrl = () => {
   if (typeof window === 'undefined') return '/data/published/default';
 
