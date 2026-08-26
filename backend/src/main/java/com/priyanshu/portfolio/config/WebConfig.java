@@ -62,7 +62,7 @@ public class WebConfig implements WebMvcConfigurer {
 
         // 2. Serve admin static frontend under /admin/**
         registry.addResourceHandler("/admin/**")
-                .addResourceLocations("file:../admin/")
+                .addResourceLocations("file:/app/admin/")
                 .resourceChain(true)
                 .addResolver(new PathResourceResolver() {
                     @Override
