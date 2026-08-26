@@ -43,7 +43,7 @@ USER appuser:appgroup
 EXPOSE 8080
 
 # Production Health Check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=180s --retries=3 \
   CMD curl -f http://localhost:${PORT:-8080}/api/admin/auth/check || exit 1
 
 # Launch application with exec to forward OS signals (SIGTERM/SIGINT) directly to JVM for graceful shutdown
