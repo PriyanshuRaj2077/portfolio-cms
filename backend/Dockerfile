@@ -8,11 +8,11 @@ FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
 WORKDIR /build
 
 # Cache Maven dependencies
-COPY pom.xml .
+COPY backend/pom.xml .
 RUN mvn dependency:go-offline -B || true
 
 # Copy application source code and build production artifact
-COPY src ./src
+COPY backend/src ./src
 RUN mvn clean package -DskipTests -B
 
 # ==============================================================================
@@ -21,6 +21,7 @@ RUN mvn clean package -DskipTests -B
 FROM eclipse-temurin:21-jre-alpine AS runtime
 
 WORKDIR /app
+COPY admin ./admin
 
 # Install curl for container healthcheck & tzdata for accurate timestamps
 RUN apk add --no-cache curl tzdata && \
