@@ -10,7 +10,8 @@
  */
 
  window.__PORTFOLIO_CONFIG__ = {
-   PUBLIC_CONTENT_BASE_URL: "https://portfolio-backend-u1na.onrender.com/data/published/default"
+   PUBLIC_CONTENT_BASE_URL:
+     "https://pwgndwuwzzlmpxymeoqs.supabase.co/storage/v1/object/public/portfolio/data/published/default"
  };
 
 const getResolvedContentBaseUrl = () => {
