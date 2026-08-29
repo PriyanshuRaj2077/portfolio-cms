@@ -41,61 +41,60 @@
   .site-main-wrapper {
     margin-left: 0;
     width: 100%;
-    padding-top: 56px;
+    padding-top: 0;
+    padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
   }
 
-  /* Compact Mobile Top Navigation Rail (Persistent, minimal) */
+  /* Hide Desktop Sidebar / Top Nav on Mobile */
   .mac-sidebar {
-    top: 0;
+    display: none !important;
+  }
+
+  /* Fixed Mobile App-Style Bottom Navigation Bar */
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
     left: 0;
     right: 0;
-    bottom: auto;
-    width: 100% !important;
-    height: 56px;
-    flex-direction: row;
+    width: 100%;
+    z-index: 1000;
+    background: rgba(15, 15, 15, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border-light);
     align-items: center;
-    justify-content: space-between;
-    padding: 0 1rem;
-    border-right: none;
-    border-bottom: 1px solid var(--border-light);
-    box-shadow: none !important;
-    background: var(--bg-primary);
+    justify-content: space-around;
+    padding: 0.35rem 0.25rem calc(0.35rem + env(safe-area-inset-bottom, 0px)) 0.25rem;
+    box-sizing: border-box;
   }
 
-  .sidebar-top {
-    padding: 0;
-    width: auto;
-  }
-
-  .sidebar-nav {
-    flex-grow: 0;
-    width: auto;
-  }
-
-  .sidebar-menu {
-    flex-direction: row;
-    gap: 0.25rem;
-  }
-
-  .sidebar-link {
-    padding: 0.4rem 0.6rem;
-    border-left: none;
-    border-bottom: 2px solid transparent;
+  .mobile-nav-link {
+    font-family: var(--font-mono);
+    font-size: clamp(0.68rem, 2.8vw, 0.82rem);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: var(--text-secondary);
+    padding: 0.35rem 0.2rem;
+    text-align: center;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: color var(--transition-fast);
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .sidebar-link.active {
-    border-left: none;
-    border-bottom-color: #FFFFFF;
+  .mobile-nav-link:hover,
+  .mobile-nav-link:focus,
+  .mobile-nav-link.active {
     color: #FFFFFF;
   }
 
-  .sidebar-letter {
-    color: #FFFFFF;
-  }
-
-  .sidebar-label {
-    display: none;
+  .mobile-nav-link.active {
+    font-weight: 700;
   }
 
   .hero-title {

@@ -3,7 +3,7 @@
  * Tests:
  * 1. Tech Stack layout & dynamic normalization (API/CMS SkillEntity flat list, grouped fallback, object map, edge cases)
  * 2. Markdown Image pipeline (![alt](url), titles, relative paths, Supabase URLs, tokens, &, query params, spaces, parentheses, underscores)
- * 3. Featured image untouched functionality
+ * 3. Mobile Navigation (Fixed compact bottom bar, 4 plain text shortcuts, responsive media queries, safe area insets)
  */
 
 const fs = require('fs');
@@ -50,7 +50,6 @@ if (typeof DOMParser === 'undefined') {
   global.DOMParser = function() {
     return {
       parseFromString: (htmlString, type) => {
-        // Minimal DOM parser simulation for sanitization validation in node
         return {
           body: {
             innerHTML: htmlString,
@@ -286,6 +285,55 @@ test('Bold and italic text around images works correctly without corrupting URLs
   assert.ok(html.includes('<strong>Bold Header</strong>'));
   assert.ok(html.includes('<img src="https://supabase.co/media/my_post_cover_image.png" alt="Cover" title="Cover" loading="lazy">'));
   assert.ok(html.includes('<em>This is an italic caption with <em>important</em> text.</em>'));
+});
+
+
+console.log('\n======================================================');
+console.log('3. MOBILE NAVIGATION COMPONENT & RESPONSIVE CSS TESTS');
+console.log('======================================================');
+
+test('HTML structure includes fixed mobile bottom navigation with plain text only', () => {
+  const indexHtml = fs.readFileSync('frontend/index.html', 'utf8');
+  assert.ok(indexHtml.includes('<nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Mobile Navigation">'));
+  assert.ok(indexHtml.includes('href="#hero" class="mobile-nav-link" id="mobile-nav-home">HOME</a>'));
+  assert.ok(indexHtml.includes('href="#sec-blog" class="mobile-nav-link" id="mobile-nav-articles">ARTICLES</a>'));
+  assert.ok(indexHtml.includes('href="#sec-projects" class="mobile-nav-link" id="mobile-nav-projects">PROJECTS</a>'));
+  assert.ok(indexHtml.includes('href="#sec-contact" class="mobile-nav-link" id="mobile-nav-contact">CONTACT</a>'));
+
+  // Ensure no emojis, icons, or graphics in mobile nav bar
+  const navSectionMatch = indexHtml.match(/<nav class="mobile-bottom-nav"[\s\S]*?<\/nav>/);
+  assert.ok(navSectionMatch, 'Mobile bottom nav found');
+  const navHtml = navSectionMatch[0];
+  assert.ok(!navHtml.includes('<img'), 'No images in mobile nav');
+  assert.ok(!navHtml.includes('<svg'), 'No SVGs in mobile nav');
+  assert.ok(!navHtml.includes('icon'), 'No icon classes in mobile nav');
+  // Check exact 4 text contents
+  const linkTexts = Array.from(navHtml.matchAll(/>([^<]+)<\/a>/g)).map(m => m[1].trim());
+  assert.deepStrictEqual(linkTexts, ['HOME', 'ARTICLES', 'PROJECTS', 'CONTACT']);
+});
+
+test('Desktop sidebar navigation is preserved in index.html and global.css', () => {
+  const indexHtml = fs.readFileSync('frontend/index.html', 'utf8');
+  assert.ok(indexHtml.includes('<aside class="mac-sidebar" id="mac-sidebar" aria-label="Main Navigation">'));
+  assert.ok(indexHtml.includes('<ul id="dynamic-nav-links" class="sidebar-menu">'));
+
+  const globalCss = fs.readFileSync('frontend/css/global.css', 'utf8');
+  assert.ok(globalCss.includes('.mac-sidebar {'));
+  assert.ok(globalCss.includes('.mobile-bottom-nav {'));
+  assert.ok(globalCss.includes('display: none;'));
+});
+
+test('Responsive CSS hides sidebar and displays fixed mobile bottom nav with safe-area insets', () => {
+  const responsiveCss = fs.readFileSync('frontend/css/responsive.css', 'utf8');
+  assert.ok(responsiveCss.includes('@media (max-width: 768px)'));
+  assert.ok(responsiveCss.includes('.mac-sidebar {'));
+  assert.ok(responsiveCss.includes('display: none !important;'));
+  assert.ok(responsiveCss.includes('.mobile-bottom-nav {'));
+  assert.ok(responsiveCss.includes('position: fixed;'));
+  assert.ok(responsiveCss.includes('bottom: 0;'));
+  assert.ok(responsiveCss.includes('env(safe-area-inset-bottom'));
+  assert.ok(responsiveCss.includes('.mobile-nav-link {'));
+  assert.ok(responsiveCss.includes('clamp('));
 });
 
 console.log('\n======================================================');

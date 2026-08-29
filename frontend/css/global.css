@@ -85,6 +85,11 @@ a {
   flex-direction: column;
 }
 
+/* Mobile Bottom Navigation (Hidden by default on Desktop/PC) */
+.mobile-bottom-nav {
+  display: none;
+}
+
 /* ==========================================================================
    MAC-STYLE MINIMAL SIDEBAR NAVIGATION
    ========================================================================== */
