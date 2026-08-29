@@ -9,9 +9,17 @@ const Renderer = {
    */
   sanitizeHTML(dirty) {
     if (!dirty) return '';
-    const temp = document.createElement('div');
-    temp.textContent = String(dirty);
-    return temp.innerHTML;
+    if (typeof document !== 'undefined' && document.createElement) {
+      const temp = document.createElement('div');
+      temp.textContent = String(dirty);
+      return temp.innerHTML;
+    }
+    return String(dirty)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   },
 
   /**
@@ -108,8 +116,18 @@ const Renderer = {
    */
   sanitizeRenderedHTML(htmlString) {
     if (!htmlString) return '';
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlString, 'text/html');
+    if (typeof DOMParser === 'undefined' && typeof document === 'undefined') {
+      return htmlString;
+    }
+    const parser = (typeof DOMParser !== 'undefined') ? new DOMParser() : null;
+    let doc = null;
+    if (parser) {
+      doc = parser.parseFromString(htmlString, 'text/html');
+    } else if (typeof document !== 'undefined' && document.implementation && document.implementation.createHTMLDocument) {
+      doc = document.implementation.createHTMLDocument('');
+      doc.body.innerHTML = htmlString;
+    }
+    if (!doc || !doc.body) return htmlString;
 
     const allowedTags = new Set([
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'hr',
@@ -194,7 +212,7 @@ const Renderer = {
     // Normalize newlines
     md = md.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
-    // Code blocks
+    // 1. Code blocks (extract to placeholder)
     const codeBlocks = [];
     md = md.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
       const index = codeBlocks.length;
@@ -206,7 +224,7 @@ const Renderer = {
       return `@@CODEBLOCK_${index}@@`;
     });
 
-    // Inline code
+    // 2. Inline code (extract to placeholder)
     const inlineCodes = [];
     md = md.replace(/`([^`\n]+)`/g, (match, code) => {
       const index = inlineCodes.length;
@@ -218,7 +236,7 @@ const Renderer = {
       return `@@INLINECODE_${index}@@`;
     });
 
-    // Headings (H6 down to H1)
+    // 3. Headings (H6 down to H1)
     md = md.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
     md = md.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
     md = md.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
@@ -226,39 +244,50 @@ const Renderer = {
     md = md.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
     md = md.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
 
-    // Horizontal Rules
+    // 4. Horizontal Rules
     md = md.replace(/^(?:---|\*\*\*|___)\s*$/gm, '<hr>');
 
-    // Blockquotes
+    // 5. Blockquotes
     md = md.replace(/^>\s+(.+)$/gm, '<blockquote><p>$1</p></blockquote>');
 
-    // Bold & Italic
+    // 6. Images: parse and place into placeholders to protect HTML attributes from subsequent text rules
+    const images = [];
+    md = md.replace(/!\[([^\]]*)\]\((<[^>]+>|(?:[^\s()"'<>]|\([^\s()]*\))+|\s*<[^>]+>\s*|\s*[^)"']+(?:\([^)]*\)[^)"']*)*\s*)(?:\s+["']([^"']*)["'])?\)/g, (match, alt, rawUrl, title) => {
+      const cleanUrl = (rawUrl || '').trim().replace(/^<|>$/g, '').trim();
+      const safeUrl = this.sanitizeUrl(cleanUrl);
+      const safeAlt = this.sanitizeHTML(alt);
+      const titleAttr = title ? ` title="${this.sanitizeHTML(title)}"` : '';
+      const index = images.length;
+      images.push(`<img src="${safeUrl}" alt="${safeAlt}"${titleAttr} loading="lazy">`);
+      return `@@IMAGE_${index}@@`;
+    });
+
+    // 7. Links: parse and place into placeholders
+    const links = [];
+    md = md.replace(/\[([^\]]+)\]\((<[^>]+>|(?:[^\s()"'<>]|\([^\s()]*\))+|\s*<[^>]+>\s*|\s*[^)"']+(?:\([^)]*\)[^)"']*)*\s*)(?:\s+["']([^"']*)["'])?\)/g, (match, text, rawUrl, title) => {
+      const cleanUrl = (rawUrl || '').trim().replace(/^<|>$/g, '').trim();
+      const safeUrl = this.sanitizeUrl(cleanUrl);
+      const safeText = this.sanitizeHTML(text);
+      const titleAttr = title ? ` title="${this.sanitizeHTML(title)}"` : '';
+      const index = links.length;
+      links.push(`<a href="${safeUrl}"${titleAttr}>${safeText}</a>`);
+      return `@@LINK_${index}@@`;
+    });
+
+    // 8. Bold & Italic on text content
     md = md.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
     md = md.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     md = md.replace(/__([^_]+)__/g, '<strong>$1</strong>');
     md = md.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-    md = md.replace(/_([^_]+)_/g, '<em>$1</em>');
+    // Ensure intra-word underscores (e.g. some_identifier_name) are preserved while supporting _italic_
+    md = md.replace(/(^|[\s(>])_([^_]+)_(?=[\s)<.,:;!?]|$)/g, '$1<em>$2</em>');
 
-    // Images & Links (supporting parentheses in URLs, spaces, special chars, optional titles)
-    md = md.replace(/!\[([^\]]*)\]\((<[^>]+>|(?:[^\s()]|\([^\s()]*\))+)(?:\s+["']([^"']*)["'])?\)/g, (match, alt, url, title) => {
-      const safeUrl = this.sanitizeUrl(url.trim());
-      const safeAlt = this.sanitizeHTML(alt);
-      const titleAttr = title ? ` title="${this.sanitizeHTML(title)}"` : '';
-      return `<img src="${safeUrl}" alt="${safeAlt}"${titleAttr} loading="lazy">`;
-    });
-    md = md.replace(/\[([^\]]+)\]\((<[^>]+>|(?:[^\s()]|\([^\s()]*\))+)(?:\s+["']([^"']*)["'])?\)/g, (match, text, url, title) => {
-      const safeUrl = this.sanitizeUrl(url.trim());
-      const safeText = this.sanitizeHTML(text);
-      const titleAttr = title ? ` title="${this.sanitizeHTML(title)}"` : '';
-      return `<a href="${safeUrl}"${titleAttr}>${safeText}</a>`;
-    });
-
-    // Unordered Lists
+    // 9. Unordered Lists
     md = md.replace(/^[\*\-]\s+(.+)$/gm, '<li>$1</li>');
     md = md.replace(/(<li>[\s\S]*?<\/li>)/g, (match) => `<ul>${match}</ul>`);
     md = md.replace(/<\/ul>\s*<ul>/g, '');
 
-    // Ordered Lists
+    // 10. Ordered Lists
     md = md.replace(/^\d+\.\s+(.+)$/gm, '<oli>$1</oli>');
     md = md.replace(/(<oli>[\s\S]*?<\/oli>)/g, (match) => {
       const fixed = match.replace(/<\/?oli>/g, tag => tag.replace('oli', 'li'));
@@ -266,23 +295,25 @@ const Renderer = {
     });
     md = md.replace(/<\/ol>\s*<ol>/g, '');
 
-    // Paragraphs for remaining text blocks
+    // 11. Paragraphs for remaining text blocks
     const lines = md.split(/\n\n+/);
     const parsedBlocks = lines.map(block => {
       const trimmed = block.trim();
       if (!trimmed) return '';
-      if (/^(<h[1-6]|<pre|<blockquote|<ul|<ol|<hr|<img|<div|<p|@@CODEBLOCK)/.test(trimmed)) {
+      if (/^(<h[1-6]|<pre|<blockquote|<ul|<ol|<hr|<p|@@CODEBLOCK|@@IMAGE)/.test(trimmed)) {
         return trimmed;
       }
       return `<p>${trimmed.replace(/\n/g, '<br>')}</p>`;
     });
     md = parsedBlocks.filter(Boolean).join('\n\n');
 
-    // Restore code blocks and inline codes
-    md = md.replace(/@@CODEBLOCK_(\d+)@@/g, (match, idx) => codeBlocks[Number(idx)] || '');
-    md = md.replace(/@@INLINECODE_(\d+)@@/g, (match, idx) => inlineCodes[Number(idx)] || '');
+    // 12. Restore placeholders in reverse order
+    md = md.replace(/@@LINK_(\d+)@@/g, (_, idx) => links[Number(idx)] || '');
+    md = md.replace(/@@IMAGE_(\d+)@@/g, (_, idx) => images[Number(idx)] || '');
+    md = md.replace(/@@INLINECODE_(\d+)@@/g, (_, idx) => inlineCodes[Number(idx)] || '');
+    md = md.replace(/@@CODEBLOCK_(\d+)@@/g, (_, idx) => codeBlocks[Number(idx)] || '');
 
-    // Pass through HTML sanitizer
+    // 13. Pass through HTML sanitizer
     return this.sanitizeRenderedHTML(md);
   },
 
@@ -424,6 +455,10 @@ const Renderer = {
    */
   normalizeSkills(skillsData) {
     if (!skillsData) return [];
+
+    if (typeof skillsData === 'string') {
+      try { skillsData = JSON.parse(skillsData); } catch (e) { return []; }
+    }
 
     // Case 1: Object dictionary { "Category": [...] }
     if (!Array.isArray(skillsData) && typeof skillsData === 'object') {
