@@ -52,24 +52,24 @@ public class MediaUsageService {
      */
     public List<MediaUsageReference> findUsages(MediaEntity media) {
         List<MediaUsageReference> usages = new ArrayList<>();
-        String fileUrl = media.getFileUrl();
-        if (fileUrl == null || fileUrl.isBlank()) {
+        if (media == null) {
             return usages;
         }
 
+        String fileUrl = media.getFileUrl();
+        String fileName = media.getFileName();
+
         // 1. Profile avatar
         for (ProfileEntity profile : profileRepository.findAll()) {
-            if (fileUrl.equals(profile.getAvatarUrl())) {
+            if (isReferenced(profile.getAvatarUrl(), fileUrl, fileName)) {
                 usages.add(new MediaUsageReference("Profile", "Avatar"));
             }
         }
 
         // 2. Blog featured image & inline Markdown content
         for (BlogPostEntity blog : blogPostRepository.findAll()) {
-            boolean usedAsFeatured = fileUrl.equals(blog.getFeaturedImageUrl());
-            // Inline Markdown: URL is embedded verbatim as full canonical URL string
-            boolean usedInMarkdown = blog.getContentMarkdown() != null
-                    && blog.getContentMarkdown().contains(fileUrl);
+            boolean usedAsFeatured = isReferenced(blog.getFeaturedImageUrl(), fileUrl, fileName);
+            boolean usedInMarkdown = isReferencedInText(blog.getContentMarkdown(), fileUrl, fileName);
 
             if (usedAsFeatured) {
                 usages.add(new MediaUsageReference("Blog",
@@ -83,12 +83,27 @@ public class MediaUsageService {
 
         // 3. Project cover image
         for (ProjectEntity project : projectRepository.findAllByOrderBySortOrderAsc()) {
-            if (fileUrl.equals(project.getCoverImage())) {
+            if (isReferenced(project.getCoverImage(), fileUrl, fileName)) {
                 usages.add(new MediaUsageReference("Project",
                         "Cover image: " + project.getTitle()));
             }
         }
 
         return usages;
+    }
+
+    private boolean isReferenced(String target, String fileUrl, String fileName) {
+        if (target == null || target.isBlank()) return false;
+        String trimmed = target.trim();
+        if (fileUrl != null && !fileUrl.isBlank() && trimmed.equals(fileUrl.trim())) return true;
+        if (fileName != null && !fileName.isBlank() && (trimmed.equals(fileName.trim()) || trimmed.endsWith("/" + fileName.trim()))) return true;
+        return false;
+    }
+
+    private boolean isReferencedInText(String text, String fileUrl, String fileName) {
+        if (text == null || text.isBlank()) return false;
+        if (fileUrl != null && !fileUrl.isBlank() && text.contains(fileUrl.trim())) return true;
+        if (fileName != null && !fileName.isBlank() && text.contains(fileName.trim())) return true;
+        return false;
     }
 }

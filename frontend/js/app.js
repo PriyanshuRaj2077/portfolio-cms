@@ -487,102 +487,104 @@ const App = {
 
     listEl.innerHTML = '<p class="comments-loading">Loading comments...</p>';
 
-    try {
-      const token = sessionStorage.getItem(`comment_token_${slug}`);
-      const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
-      const apiBase = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL : '';
-      const res = await fetch(`${apiBase}/api/public/comments/${encodeURIComponent(slug)}${tokenParam}`);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
+    const resolvedSlug = slug || articleId;
+    const token = sessionStorage.getItem(`comment_token_${resolvedSlug}`);
+    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+    const apiBase = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL : '';
+    const res = await fetch(`${apiBase}/api/public/comments/${encodeURIComponent(resolvedSlug)}${tokenParam}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
 
-      const comments = data.comments || [];
+    const comments = data.comments || [];
 
-      if (comments.length === 0) {
-        listEl.innerHTML = '<p class="comments-empty">No comments yet. Be the first to share your thoughts!</p>';
-      } else {
-        listEl.innerHTML = comments.map(c => `
-          <div class="comment-item">
-            <div class="comment-item-header">
-              <span class="comment-item-author">${this._escapeHtml(c.authorName)}</span>
-              <span class="comment-item-date">${this._formatCommentDate(c.createdAt)}</span>
-            </div>
-            <p class="comment-item-body">${this._escapeHtml(c.content)}</p>
+    if (comments.length === 0) {
+      listEl.innerHTML = '<p class="comments-empty">No comments yet. Be the first to share your thoughts!</p>';
+    } else {
+      listEl.innerHTML = comments.map(c => `
+        <div class="comment-item">
+          <div class="comment-item-header">
+            <span class="comment-item-author">${this._escapeHtml(c.authorName)}</span>
+            <span class="comment-item-date">${this._formatCommentDate(c.createdAt)}</span>
           </div>
-        `).join('');
-      }
-
-      // Show pending own comment notice if present
-      if (data.pendingOwnComment && pendingNotice && pendingPreview) {
-        pendingPreview.textContent = data.pendingOwnComment.content
-          ? (data.pendingOwnComment.content.length > 120
-              ? data.pendingOwnComment.content.substring(0, 120) + '…'
-              : data.pendingOwnComment.content)
-          : '';
-        pendingNotice.style.display = 'flex';
-      } else if (pendingNotice) {
-        pendingNotice.style.display = 'none';
-      }
-    } catch (err) {
-      listEl.innerHTML = '<p class="comments-empty">Comments could not be loaded.</p>';
+          <p class="comment-item-body">${this._escapeHtml(c.content)}</p>
+        </div>
+      `).join('');
     }
-  },
 
-  /**
-   * Wire up the comment submission form
-   */
-  initCommentForm(articleId, slug) {
-    const form = document.getElementById('article-comment-form');
-    const statusEl = document.getElementById('comment-form-status');
-    const submitBtn = document.getElementById('comment-submit-btn');
-    if (!form) return;
+    // Show pending own comment notice if present
+    if (data.pendingOwnComment && pendingNotice && pendingPreview) {
+      pendingPreview.textContent = data.pendingOwnComment.content
+        ? (data.pendingOwnComment.content.length > 120
+            ? data.pendingOwnComment.content.substring(0, 120) + '…'
+            : data.pendingOwnComment.content)
+        : '';
+      pendingNotice.style.display = 'flex';
+    } else if (pendingNotice) {
+      pendingNotice.style.display = 'none';
+    }
+  } catch (err) {
+    listEl.innerHTML = '<p class="comments-empty">Comments could not be loaded.</p>';
+  }
+},
 
-    // Remove any previous listener by cloning
-    const freshForm = form.cloneNode(true);
-    form.parentNode.replaceChild(freshForm, form);
-    const newStatusEl = freshForm.querySelector('#comment-form-status') || statusEl;
-    const newSubmitBtn = freshForm.querySelector('#comment-submit-btn') || submitBtn;
+/**
+ * Wire up the comment submission form
+ */
+initCommentForm(articleId, slug) {
+  const form = document.getElementById('article-comment-form');
+  const statusEl = document.getElementById('comment-form-status');
+  const submitBtn = document.getElementById('comment-submit-btn');
+  if (!form) return;
 
-    freshForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = (freshForm.querySelector('#comment-author-name') || {}).value || '';
-      const content = (freshForm.querySelector('#comment-content-text') || {}).value || '';
+  const resolvedSlug = slug || articleId;
 
-      if (!name.trim() || !content.trim()) {
-        this._showCommentStatus(newStatusEl, 'Please fill in your name and comment.', 'error');
+  // Remove any previous listener by cloning
+  const freshForm = form.cloneNode(true);
+  form.parentNode.replaceChild(freshForm, form);
+  const newStatusEl = freshForm.querySelector('#comment-form-status') || statusEl;
+  const newSubmitBtn = freshForm.querySelector('#comment-submit-btn') || submitBtn;
+
+  freshForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = (freshForm.querySelector('#comment-author-name') || {}).value || '';
+    const content = (freshForm.querySelector('#comment-content-text') || {}).value || '';
+
+    if (!name.trim() || !content.trim()) {
+      this._showCommentStatus(newStatusEl, 'Please fill in your name and comment.', 'error');
+      return;
+    }
+
+    newSubmitBtn.disabled = true;
+    newSubmitBtn.textContent = 'Submitting...';
+    this._showCommentStatus(newStatusEl, '', '');
+
+    try {
+      const apiBase = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL : '';
+      const res = await fetch(`${apiBase}/api/public/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ articleId: resolvedSlug, authorName: name.trim(), content: content.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        this._showCommentStatus(newStatusEl, data.error || 'Submission failed.', 'error');
         return;
       }
-
-      newSubmitBtn.disabled = true;
-      newSubmitBtn.textContent = 'Submitting...';
-      this._showCommentStatus(newStatusEl, '', '');
-
-      try {
-        const apiBase = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL : '';
-        const res = await fetch(`${apiBase}/api/public/comments`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ articleId, authorName: name.trim(), content: content.trim() })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          this._showCommentStatus(newStatusEl, data.error || 'Submission failed.', 'error');
-          return;
-        }
-        // Store submitter token in sessionStorage for this article
-        if (data.submitterToken) {
-          sessionStorage.setItem(`comment_token_${slug}`, data.submitterToken);
-        }
-        this._showCommentStatus(newStatusEl, 'Your comment has been submitted and is awaiting approval.', 'success');
-        freshForm.reset();
-        // Reload comments to show pending-own notice
-        await this.loadArticleComments(articleId, slug);
-      } catch (err) {
-        this._showCommentStatus(newStatusEl, 'Network error. Please try again.', 'error');
-      } finally {
-        newSubmitBtn.disabled = false;
-        newSubmitBtn.textContent = 'Post Comment →';
+      // Store submitter token in sessionStorage for this article
+      if (data.submitterToken) {
+        sessionStorage.setItem(`comment_token_${resolvedSlug}`, data.submitterToken);
       }
-    });
+      this._showCommentStatus(newStatusEl, 'Your comment has been submitted and is awaiting approval.', 'success');
+      freshForm.reset();
+      // Reload comments to show pending-own notice
+      await this.loadArticleComments(articleId, slug);
+    } catch (err) {
+      this._showCommentStatus(newStatusEl, 'Network error. Please try again.', 'error');
+    } finally {
+      newSubmitBtn.disabled = false;
+      newSubmitBtn.textContent = 'Post Comment →';
+    }
+  });
   },
 
   _showCommentStatus(el, message, type) {

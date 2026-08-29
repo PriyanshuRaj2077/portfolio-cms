@@ -29,16 +29,11 @@ public class WebConfig implements WebMvcConfigurer {
         }
 
         if (allowedOrigins.isEmpty()) {
-            allowedOrigins = List.of(
-                    "http://localhost:3000",
-                    "http://localhost:8080",
-                    "http://127.0.0.1:5500",
-                    "http://localhost:5173"
-            );
+            allowedOrigins = List.of("*");
         }
 
         registry.addMapping("/**")
-                .allowedOrigins(allowedOrigins.toArray(new String[0]))
+                .allowedOriginPatterns(allowedOrigins.toArray(new String[0]))
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD")
                 .allowedHeaders("*")
                 .allowCredentials(true)

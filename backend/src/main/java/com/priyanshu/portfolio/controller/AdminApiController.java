@@ -100,7 +100,19 @@ public class AdminApiController {
     // Sections
     @GetMapping("/sections")
     public ResponseEntity<List<SectionEntity>> getSections() {
-        return ResponseEntity.ok(sectionRepository.findAllByOrderByOrderAsc());
+        List<SectionEntity> sections = sectionRepository.findAllByOrderByOrderAsc();
+        if (sections.isEmpty()) {
+            List<SectionEntity> defaultSections = List.of(
+                    SectionEntity.builder().id("sec-achievements").title("Achievements").label("01 // HIGHLIGHTS").type("ACHIEVEMENTS").navLetter("A").icon("A").order(1).visible(true).theme("default").build(),
+                    SectionEntity.builder().id("sec-experience").title("Experience").label("02 // TIMELINE").type("TIMELINE").navLetter("E").icon("E").order(2).visible(true).theme("default").build(),
+                    SectionEntity.builder().id("sec-tech-stack").title("Tech Stack").label("03 // SKILLS").type("SKILLS").navLetter("T").icon("T").order(3).visible(true).theme("default").build(),
+                    SectionEntity.builder().id("sec-projects").title("Projects").label("04 // WORK").type("PROJECTS").navLetter("P").icon("P").order(4).visible(true).theme("default").build(),
+                    SectionEntity.builder().id("sec-blog").title("Blogs").label("05 // JOURNAL").type("BLOG").navLetter("B").icon("B").order(5).visible(true).theme("default").build(),
+                    SectionEntity.builder().id("sec-contact").title("Contact").label("06 // CONNECT").type("CONTACT").navLetter("C").icon("C").order(6).visible(true).theme("default").build()
+            );
+            sections = sectionRepository.saveAll(defaultSections);
+        }
+        return ResponseEntity.ok(sections);
     }
 
     @PostMapping("/sections")

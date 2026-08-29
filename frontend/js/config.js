@@ -11,7 +11,9 @@
 
  window.__PORTFOLIO_CONFIG__ = {
    PUBLIC_CONTENT_BASE_URL:
-     "https://pwgndwuwzzlmpxymeoqs.supabase.co/storage/v1/object/public/portfolio/data/published/default"
+     "https://pwgndwuwzzlmpxymeoqs.supabase.co/storage/v1/object/public/portfolio/data/published/default",
+   API_BASE_URL:
+     "https://portfolio-backend-u1na.onrender.com"
  };
 
 const getResolvedContentBaseUrl = () => {
@@ -36,7 +38,17 @@ const getResolvedApiBaseUrl = () => {
     || (window.__ENV__ && window.__ENV__.API_BASE_URL);
 
   if (customUrl && typeof customUrl === 'string' && customUrl.trim()) {
-    return customUrl.trim().replace(/\/+$/, '');
+    const trimmed = customUrl.trim().replace(/\/+$/, '');
+    // If we're on localhost:8080 and customUrl is localhost:8080, use relative
+    if (typeof window !== 'undefined' && window.location && window.location.host === 'localhost:8080' && trimmed === 'http://localhost:8080') {
+      return '';
+    }
+    return trimmed;
+  }
+
+  // Production fallback to Render backend if no config is present
+  if (typeof window !== 'undefined' && window.location && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
+    return 'https://portfolio-backend-u1na.onrender.com';
   }
 
   return '';
@@ -58,3 +70,4 @@ const CONFIG = {
 
 // Freeze config object to prevent runtime mutations
 Object.freeze(CONFIG);
+

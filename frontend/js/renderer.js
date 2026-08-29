@@ -21,14 +21,19 @@ const Renderer = {
    */
   sanitizeUrl(url) {
     if (!url || typeof url !== 'string') return '#';
-    const trimmed = url.trim();
+    let trimmed = url.trim();
     if (!trimmed) return '#';
+
+    // Decode HTML entities if present in the URL (e.g., &amp; -> &)
+    trimmed = trimmed.replace(/&amp;/g, '&');
+
+    // Reject dangerous characters that could break attributes or allow injection
+    if (/[\s<>"'`]/.test(trimmed)) {
+      return '#';
+    }
 
     // Fragment links or relative paths
     if (trimmed.startsWith('#') || trimmed.startsWith('/') || trimmed.startsWith('./') || trimmed.startsWith('../')) {
-      if (/[\s<>"'`]/.test(trimmed)) {
-        return '#';
-      }
       return trimmed;
     }
 
@@ -37,16 +42,13 @@ const Renderer = {
     if (match) {
       const scheme = match[1].toLowerCase();
       if (scheme === 'https' || scheme === 'http' || scheme === 'mailto') {
-        if (/[\s<>"'`]/.test(trimmed)) {
-          return '#';
-        }
         return trimmed;
       }
       return '#';
     }
 
     // Relative path without leading slash (e.g. media/photo.png or data/...) -> normalize to root path
-    if (/^[a-zA-Z0-9_\-\.\/]+$/.test(trimmed)) {
+    if (/^[a-zA-Z0-9_\-\.\/\?\=\&\%\#\+]+$/.test(trimmed)) {
       return '/' + trimmed;
     }
 
@@ -72,12 +74,12 @@ const Renderer = {
     ]);
 
     const allowedAttributes = {
-      'a': ['href', 'title', 'target', 'rel'],
-      'img': ['src', 'alt', 'title', 'width', 'height', 'loading'],
+      'a': ['href', 'title', 'target', 'rel', 'class'],
+      'img': ['src', 'alt', 'title', 'width', 'height', 'loading', 'class'],
       'code': ['class'],
       'pre': ['class'],
-      'th': ['align'],
-      'td': ['align'],
+      'th': ['align', 'class'],
+      'td': ['align', 'class'],
       'span': ['class'],
       'div': ['class']
     };
@@ -182,7 +184,7 @@ const Renderer = {
     md = md.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
       const safeUrl = this.sanitizeUrl(url.trim());
       const safeAlt = this.sanitizeHTML(alt);
-      return `<img src="${safeUrl}" alt="${safeAlt}">`;
+      return `<img src="${safeUrl}" alt="${safeAlt}" loading="lazy">`;
     });
     md = md.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
       const safeUrl = this.sanitizeUrl(url.trim());
@@ -208,7 +210,7 @@ const Renderer = {
     const parsedBlocks = lines.map(block => {
       const trimmed = block.trim();
       if (!trimmed) return '';
-      if (/^(<h[1-6]|<pre|<blockquote|<ul|<ol|<hr|@@CODEBLOCK)/.test(trimmed)) {
+      if (/^(<h[1-6]|<pre|<blockquote|<ul|<ol|<hr|<img|<div|<p|@@CODEBLOCK)/.test(trimmed)) {
         return trimmed;
       }
       return `<p>${trimmed.replace(/\n/g, '<br>')}</p>`;

@@ -483,6 +483,7 @@ const AdminApp = {
                 ${sec.description ? `<div class="item-subtext">${sec.description}</div>` : ''}
               </div>
               <div class="item-actions">
+                <button class="btn btn-secondary btn-sm sec-toggle-vis-btn" data-id="${sec.id}">${isVis ? 'Hide' : 'Show'}</button>
                 ${isVis ? `
                   <button class="btn btn-secondary btn-sm sec-move-up-btn" data-id="${sec.id}" ${canMoveUp ? '' : 'disabled style="opacity:0.4; cursor:not-allowed;"'} title="Move Up">↑ Up</button>
                   <button class="btn btn-secondary btn-sm sec-move-down-btn" data-id="${sec.id}" ${canMoveDown ? '' : 'disabled style="opacity:0.4; cursor:not-allowed;"'} title="Move Down">↓ Down</button>
@@ -534,6 +535,25 @@ const AdminApp = {
     newBtn.addEventListener('click', () => openForm());
     cancelBtn.addEventListener('click', closeForm);
     cancelBtn2.addEventListener('click', closeForm);
+
+    // 1-Click Visibility Toggle
+    container.querySelectorAll('.sec-toggle-vis-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        const sec = sections.find(s => s.id === id);
+        if (sec) {
+          try {
+            btn.disabled = true;
+            const newVis = !(sec.visible !== false);
+            await AdminAPI.saveSection({ ...sec, visible: newVis });
+            AdminApp.showBanner(`Section "${sec.title}" is now ${newVis ? 'visible' : 'hidden'}.`);
+            AdminApp.switchTab('sections');
+          } catch (err) {
+            AdminApp.showBanner('Failed to update visibility: ' + err.message, true);
+          }
+        }
+      });
+    });
 
     // Quick Move Up button
     container.querySelectorAll('.sec-move-up-btn').forEach(btn => {
@@ -1923,10 +1943,20 @@ const AdminApp = {
 
     const listContainer = container.querySelector('#comments-list-container');
 
+    const updateTabCounts = () => {
+      const pCount = allComments.filter(c => c.status === 'PENDING').length;
+      const aCount = allComments.filter(c => c.status === 'APPROVED').length;
+      const pBtn = container.querySelector('#tab-btn-pending');
+      const aBtn = container.querySelector('#tab-btn-approved');
+      if (pBtn) pBtn.innerHTML = `Pending <span style="font-family:var(--font-mono);font-size:0.78em;opacity:0.7;">(${pCount})</span>`;
+      if (aBtn) aBtn.innerHTML = `Approved <span style="font-family:var(--font-mono);font-size:0.78em;opacity:0.7;">(${aCount})</span>`;
+    };
+
     const switchCommentTab = (tab) => {
       container.querySelectorAll('.comment-tab-btn').forEach(b => b.classList.remove('active'));
       container.querySelector(`#tab-btn-${tab}`).classList.add('active');
       listContainer.innerHTML = renderComments(tab);
+      updateTabCounts();
       bindCommentActions();
     };
 

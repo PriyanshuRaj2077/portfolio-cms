@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/blog/:slug*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/((?!api|data|media|css|js|assets|admin).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

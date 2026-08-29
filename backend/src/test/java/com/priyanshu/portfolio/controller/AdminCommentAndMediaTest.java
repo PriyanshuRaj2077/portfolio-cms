@@ -201,4 +201,94 @@ class AdminCommentAndMediaTest {
 
         assertFalse(mediaRepository.existsById(mediaId));
     }
+
+    @Autowired
+    private SectionRepository sectionRepository;
+
+    @Test
+    @WithMockUser(username = "testadmin", roles = {"ADMIN"})
+    @DisplayName("Section management: view default sections, create, edit, reorder, toggle visibility, and delete")
+    void testSectionManagementWorkflow() throws Exception {
+        sectionRepository.deleteAll();
+
+        // 1. Initial get auto-seeds 6 default sections
+        mockMvc.perform(get("/api/admin/sections"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(6)))
+                .andExpect(jsonPath("$[0].navLetter").value("A"))
+                .andExpect(jsonPath("$[0].title").value("Achievements"));
+
+        // 2. Create a new custom dynamic section
+        String newSectionJson = """
+                {
+                    "title": "Photography",
+                    "navLetter": "F",
+                    "type": "GALLERY",
+                    "order": 1,
+                    "label": "07 // GALLERY",
+                    "description": "Visual captures",
+                    "visible": true
+                }
+                """;
+
+        mockMvc.perform(post("/api/admin/sections")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(newSectionJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("sec-photography"))
+                .andExpect(jsonPath("$.navLetter").value("F"));
+
+        // Verify reordering placed it at order 1 and shifted other visible sections
+        mockMvc.perform(get("/api/admin/sections"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(7)))
+                .andExpect(jsonPath("$[0].id").value("sec-photography"))
+                .andExpect(jsonPath("$[0].order").value(1))
+                .andExpect(jsonPath("$[1].order").value(2));
+
+        // 3. Duplicate navigation letter is rejected for visible sections
+        String duplicateLetterJson = """
+                {
+                    "title": "Film",
+                    "navLetter": "F",
+                    "type": "GALLERY",
+                    "order": 2,
+                    "visible": true
+                }
+                """;
+
+        mockMvc.perform(post("/api/admin/sections")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(duplicateLetterJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(containsString("is already assigned to another visible section")));
+
+        // 4. Edit section to change order and title
+        String editJson = """
+                {
+                    "id": "sec-photography",
+                    "title": "Fine Art Photography",
+                    "navLetter": "F",
+                    "type": "GALLERY",
+                    "order": 3,
+                    "visible": true
+                }
+                """;
+
+        mockMvc.perform(post("/api/admin/sections")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(editJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Fine Art Photography"));
+
+        // 5. Delete section
+        mockMvc.perform(delete("/api/admin/sections/sec-photography").with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        assertFalse(sectionRepository.existsById("sec-photography"));
+    }
 }
