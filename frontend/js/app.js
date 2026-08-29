@@ -487,50 +487,51 @@ const App = {
 
     listEl.innerHTML = '<p class="comments-loading">Loading comments...</p>';
 
-    const resolvedSlug = slug || articleId;
-    const token = sessionStorage.getItem(`comment_token_${resolvedSlug}`);
-    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
-    const apiBase = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL : '';
-    const res = await fetch(`${apiBase}/api/public/comments/${encodeURIComponent(resolvedSlug)}${tokenParam}`);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
+    try {
+      const resolvedSlug = slug || articleId;
+      const token = sessionStorage.getItem(`comment_token_${resolvedSlug}`);
+      const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+      const apiBase = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL : '';
+      const res = await fetch(`${apiBase}/api/public/comments/${encodeURIComponent(resolvedSlug)}${tokenParam}`);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
 
-    const comments = data.comments || [];
+      const comments = data.comments || [];
 
-    if (comments.length === 0) {
-      listEl.innerHTML = '<p class="comments-empty">No comments yet. Be the first to share your thoughts!</p>';
-    } else {
-      listEl.innerHTML = comments.map(c => `
-        <div class="comment-item">
-          <div class="comment-item-header">
-            <span class="comment-item-author">${this._escapeHtml(c.authorName)}</span>
-            <span class="comment-item-date">${this._formatCommentDate(c.createdAt)}</span>
+      if (comments.length === 0) {
+        listEl.innerHTML = '<p class="comments-empty">No comments yet. Be the first to share your thoughts!</p>';
+      } else {
+        listEl.innerHTML = comments.map(c => `
+          <div class="comment-item">
+            <div class="comment-item-header">
+              <span class="comment-item-author">${this._escapeHtml(c.authorName)}</span>
+              <span class="comment-item-date">${this._formatCommentDate(c.createdAt)}</span>
+            </div>
+            <p class="comment-item-body">${this._escapeHtml(c.content)}</p>
           </div>
-          <p class="comment-item-body">${this._escapeHtml(c.content)}</p>
-        </div>
-      `).join('');
-    }
+        `).join('');
+      }
 
-    // Show pending own comment notice if present
-    if (data.pendingOwnComment && pendingNotice && pendingPreview) {
-      pendingPreview.textContent = data.pendingOwnComment.content
-        ? (data.pendingOwnComment.content.length > 120
-            ? data.pendingOwnComment.content.substring(0, 120) + '…'
-            : data.pendingOwnComment.content)
-        : '';
-      pendingNotice.style.display = 'flex';
-    } else if (pendingNotice) {
-      pendingNotice.style.display = 'none';
+      // Show pending own comment notice if present
+      if (data.pendingOwnComment && pendingNotice && pendingPreview) {
+        pendingPreview.textContent = data.pendingOwnComment.content
+          ? (data.pendingOwnComment.content.length > 120
+              ? data.pendingOwnComment.content.substring(0, 120) + '…'
+              : data.pendingOwnComment.content)
+          : '';
+        pendingNotice.style.display = 'flex';
+      } else if (pendingNotice) {
+        pendingNotice.style.display = 'none';
+      }
+    } catch (err) {
+      listEl.innerHTML = '<p class="comments-empty">Comments could not be loaded.</p>';
     }
-  } catch (err) {
-    listEl.innerHTML = '<p class="comments-empty">Comments could not be loaded.</p>';
-  }
-},
+  },
 
-/**
- * Wire up the comment submission form
- */
-initCommentForm(articleId, slug) {
+  /**
+   * Wire up the comment submission form
+   */
+  initCommentForm(articleId, slug) {
   const form = document.getElementById('article-comment-form');
   const statusEl = document.getElementById('comment-form-status');
   const submitBtn = document.getElementById('comment-submit-btn');
