@@ -28,7 +28,7 @@ body {
 }
 
 ::selection {
-  background-color: #000000;
+  background-color: #2A2A2A;
   color: #FFFFFF;
 }
 
@@ -40,11 +40,11 @@ body {
   background: var(--bg-primary);
 }
 ::-webkit-scrollbar-thumb {
-  background: #000000;
+  background: #2A2A2A;
   border-radius: var(--radius-full);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #000000;
+  background: #737373;
 }
 
 /* Typography Base */
@@ -96,8 +96,8 @@ a {
   bottom: 0;
   width: var(--sidebar-width-collapsed);
   z-index: 1000;
-  background: #000000;
-  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border-light);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -110,7 +110,7 @@ a {
 /* Desktop Hover Expansion (150-250ms) */
 .mac-sidebar:hover {
   width: 210px;
-  background: #000000;
+  background: var(--bg-secondary);
   box-shadow: 10px 0 30px rgba(0, 0, 0, 0.6);
 }
 
@@ -150,7 +150,7 @@ a {
   align-items: center;
   gap: 1.1rem;
   padding: 0.75rem 1.35rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   font-size: 0.88rem;
   font-weight: 500;
   transition: color var(--transition-fast), background-color var(--transition-fast);
@@ -160,7 +160,7 @@ a {
 .sidebar-link:hover,
 .sidebar-link.active {
   color: #FFFFFF;
-  background: rgba(255, 255, 255, 0.15);
+  background: #202020;
   border-left-color: #FFFFFF;
 }
 
@@ -249,14 +249,15 @@ a {
   font-weight: 600;
   font-size: 0.9rem;
   border-radius: var(--radius-sm);
-  background: #000000;
-  color: #FFFFFF;
+  background: #FFFFFF;
+  color: #000000;
+  border: none;
   transition: background-color var(--transition-fast), opacity var(--transition-fast);
 }
 
 .btn-minimal:hover {
-  background: #000000;
-  opacity: 0.92;
+  background: #E5E5E5;
+  opacity: 0.96;
 }
 
 .btn-minimal-muted {
@@ -268,16 +269,16 @@ a {
   font-weight: 600;
   font-size: 0.9rem;
   border-radius: var(--radius-sm);
-  border: 1.5px solid #000000;
-  color: #000000;
+  border: 1.5px solid var(--border-light);
+  color: var(--text-primary);
   background: transparent;
   transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .btn-minimal-muted:hover {
   color: #FFFFFF;
-  background: #000000;
-  border-color: #000000;
+  background: var(--bg-secondary);
+  border-color: var(--text-secondary);
 }
 
 /* Modal Overlay for Blogs */
@@ -305,8 +306,8 @@ a {
 }
 
 .modal-card {
-  background: #E84025;
-  border: 1px solid #000000;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: var(--radius-sm);
   max-width: 760px;
   width: 100%;
@@ -323,7 +324,7 @@ a {
   right: 1.5rem;
   background: transparent;
   border: none;
-  color: #000000;
+  color: var(--text-secondary);
   font-size: 1.25rem;
   cursor: pointer;
   transition: color var(--transition-fast);
@@ -345,7 +346,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   font-weight: 500;
   font-size: 0.88rem;
 }

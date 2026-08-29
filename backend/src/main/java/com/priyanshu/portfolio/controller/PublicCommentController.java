@@ -55,6 +55,11 @@ public class PublicCommentController {
         this.blogPostRepository = blogPostRepository;
     }
 
+    public void resetRateLimits() {
+        submissionLog.clear();
+        lastSubmissionKey.clear();
+    }
+
     /**
      * Submit a new comment. Returns the submitterToken ONCE — client must store it in sessionStorage.
      */
@@ -103,12 +108,16 @@ public class PublicCommentController {
 
         // --- Verify article exists and is PUBLISHED ---
         Optional<BlogPostEntity> articleOpt = blogPostRepository.findById(articleId);
+        if (articleOpt.isEmpty()) {
+            articleOpt = blogPostRepository.findBySlug(articleId);
+        }
         if (articleOpt.isEmpty() || !"PUBLISHED".equals(articleOpt.get().getStatus())) {
             return ResponseEntity.badRequest().body(Map.of("error", "Article not found or not published."));
         }
+        String resolvedArticleId = articleOpt.get().getId();
 
         // --- Duplicate guard: same IP + same article within 30 seconds ---
-        String dupKey = ip + ":" + articleId;
+        String dupKey = ip + ":" + resolvedArticleId;
         Long lastSub = lastSubmissionKey.get(dupKey);
         if (lastSub != null && now - lastSub < DUPLICATE_GUARD_MS) {
             return ResponseEntity.status(429).body(Map.of("error",
@@ -121,7 +130,7 @@ public class PublicCommentController {
 
         CommentEntity comment = CommentEntity.builder()
                 .id(commentId)
-                .articleId(articleId)
+                .articleId(resolvedArticleId)
                 .authorName(authorName)
                 .content(content)
                 .status("PENDING")
@@ -153,8 +162,11 @@ public class PublicCommentController {
             @PathVariable String slug,
             @RequestParam(value = "token", required = false) String submitterToken
     ) {
-        // Resolve article by slug
+        // Resolve article by slug or ID
         Optional<BlogPostEntity> articleOpt = blogPostRepository.findBySlug(slug);
+        if (articleOpt.isEmpty()) {
+            articleOpt = blogPostRepository.findById(slug);
+        }
         if (articleOpt.isEmpty() || !"PUBLISHED".equals(articleOpt.get().getStatus())) {
             return ResponseEntity.ok(Map.of("comments", List.of(), "pendingOwnComment", null));
         }

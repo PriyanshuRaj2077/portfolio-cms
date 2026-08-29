@@ -28,12 +28,29 @@ const getResolvedContentBaseUrl = () => {
   return '/data/published/default';
 };
 
+const getResolvedApiBaseUrl = () => {
+  if (typeof window === 'undefined') return '';
+
+  const customUrl = (window.__PORTFOLIO_CONFIG__ && window.__PORTFOLIO_CONFIG__.API_BASE_URL)
+    || window.PORTFOLIO_API_URL
+    || (window.__ENV__ && window.__ENV__.API_BASE_URL);
+
+  if (customUrl && typeof customUrl === 'string' && customUrl.trim()) {
+    return customUrl.trim().replace(/\/+$/, '');
+  }
+
+  return '';
+};
+
 const CONFIG = {
   // Root-aware base URL for published static content
   PUBLIC_CONTENT_BASE_URL: getResolvedContentBaseUrl(),
 
   // Bundled fallback base path
   BUNDLED_FALLBACK_BASE_URL: '/data/published/default',
+
+  // API base URL for public endpoints
+  API_BASE_URL: getResolvedApiBaseUrl(),
 
   // Default Published Manifest File Name
   MANIFEST_FILE: 'manifest.json'

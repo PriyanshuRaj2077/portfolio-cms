@@ -29,10 +29,10 @@ const Renderer = {
       if (/[\s<>"'`]/.test(trimmed)) {
         return '#';
       }
-      return this.sanitizeHTML(trimmed);
+      return trimmed;
     }
 
-    // Protocol check
+    // Protocol check (http, https, mailto)
     const match = trimmed.match(/^([a-zA-Z0-9+.-]+):/);
     if (match) {
       const scheme = match[1].toLowerCase();
@@ -40,14 +40,14 @@ const Renderer = {
         if (/[\s<>"'`]/.test(trimmed)) {
           return '#';
         }
-        return this.sanitizeHTML(trimmed);
+        return trimmed;
       }
       return '#';
     }
 
-    // Relative path without leading slash (e.g. media/photo.png or data/...)
+    // Relative path without leading slash (e.g. media/photo.png or data/...) -> normalize to root path
     if (/^[a-zA-Z0-9_\-\.\/]+$/.test(trimmed)) {
-      return this.sanitizeHTML(trimmed);
+      return '/' + trimmed;
     }
 
     return '#';
@@ -73,7 +73,7 @@ const Renderer = {
 
     const allowedAttributes = {
       'a': ['href', 'title', 'target', 'rel'],
-      'img': ['src', 'alt', 'title', 'width', 'height'],
+      'img': ['src', 'alt', 'title', 'width', 'height', 'loading'],
       'code': ['class'],
       'pre': ['class'],
       'th': ['align'],
@@ -179,8 +179,16 @@ const Renderer = {
     md = md.replace(/_([^_]+)_/g, '<em>$1</em>');
 
     // Images & Links
-    md = md.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
-    md = md.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+    md = md.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
+      const safeUrl = this.sanitizeUrl(url.trim());
+      const safeAlt = this.sanitizeHTML(alt);
+      return `<img src="${safeUrl}" alt="${safeAlt}">`;
+    });
+    md = md.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
+      const safeUrl = this.sanitizeUrl(url.trim());
+      const safeText = this.sanitizeHTML(text);
+      return `<a href="${safeUrl}">${safeText}</a>`;
+    });
 
     // Unordered Lists
     md = md.replace(/^[\*\-]\s+(.+)$/gm, '<li>$1</li>');

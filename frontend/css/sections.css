@@ -332,19 +332,19 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.85rem 1.1rem;
-  border: 1.5px solid #000000;
+  border: 1px solid var(--border-light);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: 0.9rem;
   font-weight: 600;
-  background: transparent;
+  background: var(--bg-secondary);
   transition: border-color var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .contact-item-link:hover {
-  border-color: #000000;
-  background-color: #000000;
+  border-color: var(--text-secondary);
+  background-color: var(--bg-card);
   color: #FFFFFF;
 }
 
@@ -422,9 +422,9 @@
   font-family: var(--font-mono);
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text-primary);
-  background: transparent;
-  border: 1px solid var(--text-primary);
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
   padding: 0.2rem 0.6rem;
   border-radius: var(--radius-xs);
 }
@@ -459,7 +459,7 @@
 
 .article-page-body strong,
 .article-page-body b {
-  color: #000000;
+  color: #FFFFFF;
   font-weight: 700;
 }
 
@@ -487,8 +487,8 @@
 }
 
 .article-page-body pre {
-  background: #000000;
-  border: 1px solid rgba(0, 0, 0, 0.3);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
   border-radius: var(--radius-sm);
   padding: 1.25rem;
   overflow-x: auto;
@@ -499,10 +499,11 @@
   font-family: var(--font-mono);
   font-size: 0.88em;
   font-weight: 600;
-  background: rgba(0, 0, 0, 0.15);
+  background: var(--bg-secondary);
   padding: 0.2em 0.45em;
   border-radius: var(--radius-xs);
   color: var(--text-primary);
+  border: 1px solid var(--border-light);
 }
 
 .article-page-body pre code {
@@ -510,6 +511,16 @@
   color: #FFFFFF;
   font-weight: 400;
   padding: 0;
+  border: none;
+}
+
+.article-page-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  display: block;
+  margin: 1.75rem 0;
+  border: 1px solid var(--border-light);
 }
 
 .article-page-body hr {
@@ -537,9 +548,10 @@
   width: 100%;
   max-height: 480px;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: block;
   margin-bottom: 2.5rem;
+  border: 1px solid var(--border-light);
 }
 
 /* ==========================================================================
@@ -549,14 +561,14 @@
 .article-comments-section {
   margin-top: 4rem;
   padding-top: 2.5rem;
-  border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.08));
+  border-top: 1px solid var(--border-light);
 }
 
 .comments-heading {
-  font-family: var(--font-display, 'Playfair Display', serif);
+  font-family: var(--font-display, serif);
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--text-primary, #F5F5F0);
+  color: var(--text-primary);
   margin-bottom: 1.75rem;
 }
 
@@ -570,15 +582,15 @@
 .comments-loading,
 .comments-empty {
   font-size: 0.9rem;
-  color: var(--text-muted, #606060);
+  color: var(--text-muted);
   padding: 0.75rem 0;
 }
 
 .comment-item {
   padding: 1rem 1.25rem;
-  border: 1px solid var(--border-subtle, rgba(255,255,255,0.06));
-  border-radius: 6px;
-  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
 }
 
 .comment-item-header {
@@ -592,18 +604,18 @@
 .comment-item-author {
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--text-primary, #F5F5F0);
+  color: var(--text-primary);
 }
 
 .comment-item-date {
   font-size: 0.78rem;
-  color: var(--text-muted, #606060);
+  color: var(--text-muted);
 }
 
 .comment-item-body {
   font-size: 0.92rem;
   line-height: 1.65;
-  color: var(--text-secondary, #C5C5C0);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -613,9 +625,9 @@
   align-items: flex-start;
   gap: 0.65rem;
   padding: 0.75rem 1rem;
-  border: 1px solid rgba(234, 179, 8, 0.25);
-  border-radius: 6px;
-  background: rgba(234, 179, 8, 0.05);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  border-radius: var(--radius-sm);
+  background: rgba(234, 179, 8, 0.08);
   margin-bottom: 1.5rem;
 }
 
@@ -628,7 +640,7 @@
 
 .pending-comment-text {
   font-size: 0.85rem;
-  color: var(--text-secondary, #C5C5C0);
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 
@@ -636,13 +648,13 @@
 .comment-form-wrapper {
   margin-top: 2.5rem;
   padding-top: 2rem;
-  border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.06));
+  border-top: 1px solid var(--border-light);
 }
 
 .comment-form-title {
   font-size: 1.1rem;
   font-weight: 600;
-  color: var(--text-primary, #F5F5F0);
+  color: var(--text-primary);
   margin-bottom: 1.25rem;
 }
 
@@ -672,29 +684,29 @@
 .comment-form-label {
   font-size: 0.82rem;
   font-weight: 500;
-  color: var(--text-secondary, #C5C5C0);
+  color: var(--text-secondary);
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
 .comment-form-input,
 .comment-form-textarea {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid var(--border-subtle, rgba(255,255,255,0.1));
-  border-radius: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
   padding: 0.65rem 0.85rem;
-  font-family: var(--font-body, 'Inter', sans-serif);
+  font-family: var(--font-body);
   font-size: 0.9rem;
-  color: var(--text-primary, #F5F5F0);
+  color: var(--text-primary);
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color var(--transition-fast);
   width: 100%;
   box-sizing: border-box;
 }
 
 .comment-form-input:focus,
 .comment-form-textarea:focus {
-  border-color: rgba(255,255,255,0.3);
+  border-color: var(--text-muted);
 }
 
 .comment-form-textarea {
@@ -705,7 +717,7 @@
 .comment-form-status {
   font-size: 0.85rem;
   padding: 0.6rem 0.85rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .comment-form-status.success {
@@ -723,19 +735,20 @@
 .comment-submit-btn {
   align-self: flex-start;
   padding: 0.6rem 1.5rem;
-  background: var(--text-primary, #F5F5F0);
-  color: var(--bg-primary, #0E0E0E);
+  background: #FFFFFF;
+  color: #000000;
   border: none;
-  border-radius: 4px;
-  font-family: var(--font-body, 'Inter', sans-serif);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: opacity var(--transition-fast), background-color var(--transition-fast);
 }
 
 .comment-submit-btn:hover {
-  opacity: 0.88;
+  background: #E5E5E5;
+  opacity: 0.96;
 }
 
 .comment-submit-btn:disabled {

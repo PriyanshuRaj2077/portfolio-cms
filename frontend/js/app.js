@@ -343,7 +343,10 @@ const App = {
         const featuredImgContainer = document.getElementById('article-featured-image-container');
         const featuredImg = document.getElementById('article-featured-img');
         if (featuredImgContainer && featuredImg) {
-          if (article.featuredImageUrl && typeof article.featuredImageUrl === 'string') {
+          featuredImg.onerror = () => {
+            featuredImgContainer.style.display = 'none';
+          };
+          if (article.featuredImageUrl && typeof article.featuredImageUrl === 'string' && article.featuredImageUrl.trim()) {
             const safeUrl = Renderer.sanitizeUrl(article.featuredImageUrl.trim());
             if (safeUrl && safeUrl !== '#') {
               featuredImg.src = safeUrl;

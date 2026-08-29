@@ -57,9 +57,9 @@
     justify-content: space-between;
     padding: 0 1rem;
     border-right: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom: 1px solid var(--border-light);
     box-shadow: none !important;
-    background: #000000;
+    background: var(--bg-primary);
   }
 
   .sidebar-top {
@@ -81,7 +81,7 @@
     padding: 0.4rem 0.6rem;
     border-left: none;
     border-bottom: 2px solid transparent;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--text-secondary);
   }
 
   .sidebar-link.active {

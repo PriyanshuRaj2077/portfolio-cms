@@ -4,29 +4,29 @@
    ========================================================================== */
 
 :root {
-  /* Color Palette - Editorial #E84025 Theme */
-  --bg-primary: #E84025;
-  --bg-secondary: #E84025;
-  --bg-card: #E84025;
-  --bg-card-hover: rgba(0, 0, 0, 0.06);
-  --bg-subtle: rgba(0, 0, 0, 0.05);
+  /* Color Palette - Minimal Dark Theme */
+  --bg-primary: #0F0F0F;
+  --bg-secondary: #181818;
+  --bg-card: #1C1C1C;
+  --bg-card-hover: #202020;
+  --bg-subtle: #181818;
 
   /* Typography Colors */
-  --text-primary: #000000;
-  --text-secondary: #FFFFFF;
-  --text-muted: rgba(0, 0, 0, 0.75);
-  --text-inverse: #FFFFFF;
-  --text-dark: #000000;
-  --text-cream: #FFFFFF;
+  --text-primary: #F5F5F5;
+  --text-secondary: #A1A1A1;
+  --text-muted: #737373;
+  --text-inverse: #0F0F0F;
+  --text-dark: #0F0F0F;
+  --text-cream: #F5F5F5;
   --text-white: #FFFFFF;
 
   /* Accents */
   --accent-primary: #FFFFFF;
-  --accent-muted: #FFFFFF;
+  --accent-muted: #A1A1A1;
 
   /* Borders & Dividers */
-  --border-light: rgba(0, 0, 0, 0.18);
-  --border-medium: rgba(0, 0, 0, 0.35);
+  --border-light: #2A2A2A;
+  --border-medium: #2A2A2A;
 
   /* Fonts */
   --font-display: 'Bodoni MT', Didot, 'Didot LT STD', 'Cinzel', 'Playfair Display', 'Times New Roman', Georgia, serif;
