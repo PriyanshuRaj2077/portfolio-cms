@@ -23,6 +23,15 @@
     max-width: 320px;
     aspect-ratio: 16/9;
   }
+
+  .techstack-category {
+    grid-template-columns: 180px 1fr;
+    gap: 1.25rem 2rem;
+  }
+
+  .techstack-items-grid {
+    gap: 0.75rem 1.5rem;
+  }
 }
 
 /* Mobile Breakpoint */
@@ -133,5 +142,44 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+  }
+
+  /* Tech Stack Mobile Layout */
+  .techstack-category {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+    padding: 1.25rem 0;
+  }
+
+  .techstack-cat-title {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  .techstack-items-grid {
+    gap: 0.65rem 1.25rem;
+  }
+
+  .techstack-item {
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+  }
+}
+
+/* Small Mobile Breakpoint */
+@media (max-width: 480px) {
+  .techstack-category {
+    padding: 1rem 0;
+    gap: 0.5rem;
+  }
+
+  .techstack-items-grid {
+    gap: 0.5rem 1rem;
+  }
+
+  .techstack-item {
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
+    line-height: 1.35;
   }
 }
