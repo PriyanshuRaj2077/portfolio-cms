@@ -15,44 +15,88 @@ const Renderer = {
   },
 
   /**
+   * Decode HTML entities in strings without corrupting valid parameters
+   */
+  decodeHtmlEntities(str) {
+    if (!str || typeof str !== 'string') return '';
+    return str
+      .replace(/&amp;/gi, '&')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;|&#x27;|&apos;/gi, "'")
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&#(\d+);/g, (_, num) => String.fromCharCode(parseInt(num, 10)))
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+  },
+
+  /**
    * Centralized safe URL sanitizer
-   * Allows: https:, http:, mailto:, relative paths (/..., ./..., ../..., media/...), fragments (#...)
-   * Rejects: javascript:, vbscript:, data:, data:text/html, and any executable/unsafe schemes
+   * Handles:
+   * - Relative paths (media/..., ./media/..., ../media/..., /media/...) -> normalized to root-relative (/...)
+   * - Absolute URLs (https://..., http://..., mailto:..., //...)
+   * - Supabase Storage URLs with signatures, tokens, and query parameters
+   * - HTML entities (&amp;, &#38;, etc.) decoded cleanly without corrupting parameters
+   * - Special characters (parentheses, @2x, dashes, underscores, encoded spaces)
+   * - Strips surrounding quotes, angle brackets, and markdown titles
+   * Rejects: javascript:, vbscript:, data:, file:, blob:, and dangerous injection vectors
    */
   sanitizeUrl(url) {
     if (!url || typeof url !== 'string') return '#';
     let trimmed = url.trim();
     if (!trimmed) return '#';
 
-    // Decode HTML entities if present in the URL (e.g., &amp; -> &)
-    trimmed = trimmed.replace(/&amp;/g, '&');
+    // 1. Decode HTML entities (e.g. &amp; -> &, &quot; -> ", etc.)
+    trimmed = this.decodeHtmlEntities(trimmed);
 
-    // Reject dangerous characters that could break attributes or allow injection
-    if (/[\s<>"'`]/.test(trimmed)) {
+    // 2. Strip trailing markdown link title if passed with URL (e.g., 'url "title"' or "url 'title'")
+    trimmed = trimmed.replace(/\s+["'][^"']*["']\s*$/, '').trim();
+
+    // 3. Strip surrounding angle brackets <url> and quotes "url" / 'url'
+    trimmed = trimmed.replace(/^<|>$/g, '').replace(/^["']|["']$/g, '').trim();
+
+    // 4. Encode unescaped whitespace to %20 to avoid broken URLs while maintaining safety
+    trimmed = trimmed.replace(/\s+/g, '%20');
+
+    // 5. Reject dangerous control characters or characters that break attribute boundaries
+    if (/[\r\n\t<>"'`]/.test(trimmed)) {
       return '#';
     }
 
-    // Fragment links or relative paths
-    if (trimmed.startsWith('#') || trimmed.startsWith('/') || trimmed.startsWith('./') || trimmed.startsWith('../')) {
+    // 6. Fragment links
+    if (trimmed.startsWith('#')) {
       return trimmed;
     }
 
-    // Protocol check (http, https, mailto)
-    const match = trimmed.match(/^([a-zA-Z0-9+.-]+):/);
-    if (match) {
-      const scheme = match[1].toLowerCase();
+    // 7. Check for protocol schemes
+    const schemeMatch = trimmed.match(/^([a-zA-Z0-9+.-]+):/);
+    if (schemeMatch) {
+      const scheme = schemeMatch[1].toLowerCase();
       if (scheme === 'https' || scheme === 'http' || scheme === 'mailto') {
         return trimmed;
       }
+      // Reject javascript:, data:, vbscript:, file:, blob:, etc.
       return '#';
     }
 
-    // Relative path without leading slash (e.g. media/photo.png or data/...) -> normalize to root path
-    if (/^[a-zA-Z0-9_\-\.\/\?\=\&\%\#\+]+$/.test(trimmed)) {
-      return '/' + trimmed;
+    // 8. Protocol-relative URLs (//cdn.example.com/...)
+    if (trimmed.startsWith('//')) {
+      return trimmed;
     }
 
-    return '#';
+    // 9. Relative paths: normalize to root-relative path (e.g. media/photo.png, ./media/photo.png, ../media/photo.png -> /media/photo.png)
+    // This ensures images resolve consistently regardless of route (/ or /blog/<slug>) or refresh.
+    let normalized = trimmed;
+    if (normalized.startsWith('./')) {
+      normalized = normalized.substring(2);
+    }
+    while (normalized.startsWith('../')) {
+      normalized = normalized.substring(3);
+    }
+    if (!normalized.startsWith('/')) {
+      normalized = '/' + normalized;
+    }
+
+    return normalized;
   },
 
   /**
@@ -60,6 +104,7 @@ const Renderer = {
    * Strips dangerous tags (<script>, <style>, <iframe>, <object>, <embed>, <form>, <input>, etc.),
    * all inline event handlers (onload, onerror, onclick, etc.),
    * and unsafe URI schemes (javascript:, data:text/html, vbscript:).
+   * Normalizes and validates image src and anchor href URLs.
    */
   sanitizeRenderedHTML(htmlString) {
     if (!htmlString) return '';
@@ -85,25 +130,39 @@ const Renderer = {
     };
 
     const sanitizeNode = (node) => {
-      const children = Array.from(node.childNodes);
+      const children = Array.from(node.childNodes || []);
       for (const child of children) {
         if (child.nodeType === Node.ELEMENT_NODE) {
-          const tagName = child.tagName.toLowerCase();
+          const tagName = (child.tagName || '').toLowerCase();
           if (!allowedTags.has(tagName)) {
             child.remove();
             continue;
           }
 
-          const attrs = Array.from(child.attributes);
+          const attrs = Array.from(child.attributes || []);
           const validAttrs = allowedAttributes[tagName] || [];
           for (const attr of attrs) {
-            const attrName = attr.name.toLowerCase();
+            const attrName = (attr.name || (Array.isArray(attr) ? attr[0] : '')).toLowerCase();
+            const attrValue = attr.value !== undefined ? attr.value : (Array.isArray(attr) ? attr[1] : (child.getAttribute(attrName) || ''));
+
             if (attrName.startsWith('on') || !validAttrs.includes(attrName)) {
-              child.removeAttribute(attr.name);
-            } else if (attrName === 'href' || attrName === 'src') {
-              const val = attr.value.trim().toLowerCase();
-              if (val.startsWith('javascript:') || val.startsWith('vbscript:') || val.startsWith('data:') || val.startsWith('file:') || val.startsWith('blob:')) {
-                child.removeAttribute(attr.name);
+              child.removeAttribute(attrName);
+            } else if (attrName === 'src' && tagName === 'img') {
+              const safeSrc = Renderer.sanitizeUrl(attrValue);
+              if (safeSrc && safeSrc !== '#') {
+                child.setAttribute('src', safeSrc);
+                if (!child.hasAttribute('loading')) {
+                  child.setAttribute('loading', 'lazy');
+                }
+              } else {
+                child.removeAttribute('src');
+              }
+            } else if (attrName === 'href' && tagName === 'a') {
+              const safeHref = Renderer.sanitizeUrl(attrValue);
+              if (safeHref && safeHref !== '#') {
+                child.setAttribute('href', safeHref);
+              } else {
+                child.removeAttribute('href');
               }
             }
           }
@@ -180,16 +239,18 @@ const Renderer = {
     md = md.replace(/\*([^*]+)\*/g, '<em>$1</em>');
     md = md.replace(/_([^_]+)_/g, '<em>$1</em>');
 
-    // Images & Links
-    md = md.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
+    // Images & Links (supporting parentheses in URLs, spaces, special chars, optional titles)
+    md = md.replace(/!\[([^\]]*)\]\((<[^>]+>|(?:[^\s()]|\([^\s()]*\))+)(?:\s+["']([^"']*)["'])?\)/g, (match, alt, url, title) => {
       const safeUrl = this.sanitizeUrl(url.trim());
       const safeAlt = this.sanitizeHTML(alt);
-      return `<img src="${safeUrl}" alt="${safeAlt}" loading="lazy">`;
+      const titleAttr = title ? ` title="${this.sanitizeHTML(title)}"` : '';
+      return `<img src="${safeUrl}" alt="${safeAlt}"${titleAttr} loading="lazy">`;
     });
-    md = md.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
+    md = md.replace(/\[([^\]]+)\]\((<[^>]+>|(?:[^\s()]|\([^\s()]*\))+)(?:\s+["']([^"']*)["'])?\)/g, (match, text, url, title) => {
       const safeUrl = this.sanitizeUrl(url.trim());
       const safeText = this.sanitizeHTML(text);
-      return `<a href="${safeUrl}">${safeText}</a>`;
+      const titleAttr = title ? ` title="${this.sanitizeHTML(title)}"` : '';
+      return `<a href="${safeUrl}"${titleAttr}>${safeText}</a>`;
     });
 
     // Unordered Lists
@@ -354,17 +415,92 @@ const Renderer = {
     `;
   },
 
+  /**
+   * Dynamically normalizes skills data into categories:
+   * - Handles flat SkillEntity[] from API/Supabase/published JSON
+   * - Handles grouped {category, skills[]} arrays (like default fallback skills.v1.json)
+   * - Handles category object maps { "Category": [...] }
+   * - Preserves skill names, categories, and sort order without any hardcoding
+   */
+  normalizeSkills(skillsData) {
+    if (!skillsData) return [];
+
+    // Case 1: Object dictionary { "Category": [...] }
+    if (!Array.isArray(skillsData) && typeof skillsData === 'object') {
+      const categories = [];
+      for (const [catName, list] of Object.entries(skillsData)) {
+        if (!catName || !list) continue;
+        const skillList = Array.isArray(list) ? list : [list];
+        const names = skillList
+          .map(s => (typeof s === 'string' ? s.trim() : (s && (s.name || s.skill || s.title) ? String(s.name || s.skill || s.title).trim() : '')))
+          .filter(Boolean);
+        if (names.length > 0) {
+          categories.push({ category: catName.trim(), skills: names });
+        }
+      }
+      return categories;
+    }
+
+    if (!Array.isArray(skillsData) || skillsData.length === 0) return [];
+
+    // Check if the array elements are already grouped: item has a 'skills' array property
+    const isGrouped = skillsData.some(item => item && Array.isArray(item.skills));
+
+    if (isGrouped) {
+      return skillsData.map(cat => {
+        if (!cat) return null;
+        const catTitle = cat.category || cat.title || cat.name || 'General';
+        const rawSkills = Array.isArray(cat.skills) ? cat.skills : [];
+        const names = rawSkills
+          .map(s => (typeof s === 'string' ? s.trim() : (s && (s.name || s.skill || s.title) ? String(s.name || s.skill || s.title).trim() : '')))
+          .filter(Boolean);
+        return { category: String(catTitle).trim(), skills: names };
+      }).filter(c => c && c.skills.length > 0);
+    }
+
+    // Case 2: Flat SkillEntity[] array (e.g. from API/Supabase: [{ id, name, category, level, sortOrder }, ...])
+    const sorted = [...skillsData].sort((a, b) => {
+      const orderA = (a && typeof a.sortOrder === 'number') ? a.sortOrder : 0;
+      const orderB = (b && typeof b.sortOrder === 'number') ? b.sortOrder : 0;
+      return orderA - orderB;
+    });
+
+    const categoryMap = new Map();
+
+    for (const item of sorted) {
+      if (!item) continue;
+      const rawName = item.name || item.skill || item.title || (typeof item === 'string' ? item : '');
+      const skillName = String(rawName).trim();
+      if (!skillName) continue;
+
+      const catName = String(item.category || item.categoryName || 'General').trim();
+      if (!categoryMap.has(catName)) {
+        categoryMap.set(catName, []);
+      }
+      categoryMap.get(catName).push(skillName);
+    }
+
+    const result = [];
+    for (const [category, skills] of categoryMap.entries()) {
+      if (skills.length > 0) {
+        result.push({ category, skills });
+      }
+    }
+    return result;
+  },
+
   // 3. Skills / Tech Stack Renderer
   renderSkills(skillsData) {
-    if (!skillsData || skillsData.length === 0) return '<p>No tech stack published yet.</p>';
+    const normalized = this.normalizeSkills(skillsData);
+    if (!normalized || normalized.length === 0) return '<p>No tech stack published yet.</p>';
     return `
       <div class="techstack-editorial">
-        ${skillsData.map(cat => `
+        ${normalized.map(cat => `
           <div class="techstack-category">
             <h3 class="techstack-cat-title">${this.sanitizeHTML(cat.category)}</h3>
             <div class="techstack-items-grid">
-              ${(cat.skills || []).map(s => `
-                <span class="techstack-item">${this.sanitizeHTML(s.name)}</span>
+              ${cat.skills.map(skillName => `
+                <span class="techstack-item">${this.sanitizeHTML(skillName)}</span>
               `).join('')}
             </div>
           </div>
@@ -491,4 +627,3 @@ const Renderer = {
     return `<div class="techstack-items-grid">${images.map(img => `<span>${this.sanitizeHTML(img.caption || img.url)} ${img.url ? `<a href="${this.sanitizeUrl(img.url)}" target="_blank" rel="noopener noreferrer">↗</a>` : ''}</span>`).join('')}</div>`;
   }
 };
-

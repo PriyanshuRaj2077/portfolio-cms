@@ -287,15 +287,18 @@ const App = {
     const getSlugFromLocation = () => {
       const path = window.location.pathname;
       if (path.startsWith('/blog/')) {
-        return path.replace(/^\/blog\//, '').replace(/\/$/, '').trim();
+        const raw = path.replace(/^\/blog\//, '').replace(/\/$/, '').trim();
+        try { return decodeURIComponent(raw); } catch (e) { return raw; }
       }
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('blog')) {
-        return urlParams.get('blog').trim();
+        const raw = urlParams.get('blog').trim();
+        try { return decodeURIComponent(raw); } catch (e) { return raw; }
       }
       const hash = window.location.hash;
       if (hash.startsWith('#blog/')) {
-        return hash.replace(/^#blog\//, '').trim();
+        const raw = hash.replace(/^#blog\//, '').trim();
+        try { return decodeURIComponent(raw); } catch (e) { return raw; }
       }
       return null;
     };
@@ -343,21 +346,23 @@ const App = {
         const featuredImgContainer = document.getElementById('article-featured-image-container');
         const featuredImg = document.getElementById('article-featured-img');
         if (featuredImgContainer && featuredImg) {
-          featuredImg.onerror = () => {
-            featuredImgContainer.style.display = 'none';
-          };
+          featuredImg.onerror = null;
           if (article.featuredImageUrl && typeof article.featuredImageUrl === 'string' && article.featuredImageUrl.trim()) {
             const safeUrl = Renderer.sanitizeUrl(article.featuredImageUrl.trim());
             if (safeUrl && safeUrl !== '#') {
+              featuredImg.onerror = () => {
+                featuredImgContainer.style.display = 'none';
+              };
+              featuredImg.alt = article.title ? `${article.title} featured image` : 'Article featured image';
               featuredImg.src = safeUrl;
               featuredImgContainer.style.display = 'block';
             } else {
-              featuredImgContainer.style.display = 'none';
               featuredImg.src = '';
+              featuredImgContainer.style.display = 'none';
             }
           } else {
-            featuredImgContainer.style.display = 'none';
             featuredImg.src = '';
+            featuredImgContainer.style.display = 'none';
           }
         }
 
