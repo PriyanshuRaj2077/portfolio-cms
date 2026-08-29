@@ -167,6 +167,11 @@ const AdminAPI = {
   },
   async deleteMedia(id) { return this.request(`/media/${id}`, { method: 'DELETE' }); },
 
+  // Comment Management Operations (Admin)
+  async getComments() { return this.request('/comments'); },
+  async approveComment(id) { return this.request(`/comments/${id}/approve`, { method: 'POST' }); },
+  async deleteComment(id) { return this.request(`/comments/${id}`, { method: 'DELETE' }); },
+
   // Publish Operation (Atomic 2-phase publication)
   async publish() {
     return this.request('/publish', { method: 'POST' });

@@ -145,7 +145,8 @@ const AdminApp = {
         experience: 'Work Experience',
         achievements: 'Achievements',
         blogs: 'Blogs & Articles',
-        media: 'Media Library'
+        media: 'Media Library',
+        comments: 'Comment Management'
       };
       topbarTitle.textContent = titles[tabName] || (tabName.toUpperCase() + ' // MANAGEMENT');
     }
@@ -163,6 +164,7 @@ const AdminApp = {
       case 'achievements': await this.renderAchievementsView(mainView); break;
       case 'blogs': await this.renderBlogsView(mainView); break;
       case 'media': await this.renderMediaView(mainView); break;
+      case 'comments': await this.renderCommentsView(mainView); break;
       default: mainView.innerHTML = '<p>View not found.</p>';
     }
   },
@@ -1367,6 +1369,113 @@ const AdminApp = {
   // =========================================================================
   // 7. BLOGS / ARTICLES CMS
   // =========================================================================
+
+  /**
+   * Shared media picker modal.
+   * @param {string} title - Modal title
+   * @param {function} onSelect - Callback(url) when user confirms selection
+   */
+  async openMediaPicker(title, onSelect) {
+    let mediaList = [];
+    try { mediaList = await AdminAPI.getMedia() || []; } catch(e) { mediaList = []; }
+
+    let selectedUrl = null;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'media-picker-overlay';
+    overlay.innerHTML = `
+      <div class="media-picker-modal" role="dialog" aria-modal="true" aria-label="${title}">
+        <div class="media-picker-header">
+          <h3>${title}</h3>
+          <button class="media-picker-close" id="mp-close-btn" aria-label="Close">✕</button>
+        </div>
+        <div class="media-picker-toolbar">
+          <input type="file" id="mp-upload-input" accept="image/*" style="display:none;">
+          <button class="btn btn-secondary btn-sm" id="mp-upload-btn">+ Upload New Image</button>
+          <span style="font-size:0.8rem; color:var(--text-muted);">— or select from library below</span>
+        </div>
+        <div class="media-picker-grid" id="mp-grid">
+          ${mediaList.length === 0 ? '<p style="color:var(--text-muted);grid-column:1/-1;">No media uploaded yet.</p>' : ''}
+          ${mediaList.map(m => `
+            <div class="media-picker-item" data-url="${m.fileUrl}" title="${m.fileName}">
+              <img src="${m.fileUrl}" alt="${m.fileName}" loading="lazy">
+              <div class="media-picker-item-name">${m.fileName}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="media-picker-footer">
+          <button class="btn btn-secondary btn-sm" id="mp-cancel-btn">Cancel</button>
+          <button class="btn btn-primary btn-sm" id="mp-confirm-btn" disabled>Select Image</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const close = () => { if (overlay.parentElement) overlay.remove(); };
+
+    overlay.querySelector('#mp-close-btn').addEventListener('click', close);
+    overlay.querySelector('#mp-cancel-btn').addEventListener('click', close);
+
+    // Keyboard accessibility
+    overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+
+    // Item selection
+    overlay.querySelectorAll('.media-picker-item').forEach(item => {
+      item.addEventListener('click', () => {
+        overlay.querySelectorAll('.media-picker-item').forEach(i => i.classList.remove('selected'));
+        item.classList.add('selected');
+        selectedUrl = item.getAttribute('data-url');
+        overlay.querySelector('#mp-confirm-btn').disabled = false;
+      });
+    });
+
+    // Upload new image inside picker
+    const mpUploadInput = overlay.querySelector('#mp-upload-input');
+    const mpUploadBtn = overlay.querySelector('#mp-upload-btn');
+    mpUploadBtn.addEventListener('click', () => mpUploadInput.click());
+    mpUploadInput.addEventListener('change', async () => {
+      const file = mpUploadInput.files[0];
+      if (!file) return;
+      mpUploadBtn.disabled = true;
+      mpUploadBtn.textContent = 'Uploading...';
+      try {
+        const res = await AdminAPI.uploadMedia(file);
+        const url = res.fileUrl || res.url;
+        selectedUrl = url;
+        // Prepend new item to grid
+        const grid = overlay.querySelector('#mp-grid');
+        const newItem = document.createElement('div');
+        newItem.className = 'media-picker-item selected';
+        newItem.setAttribute('data-url', url);
+        newItem.innerHTML = `<img src="${url}" alt="uploaded" loading="lazy"><div class="media-picker-item-name">${res.fileName || 'uploaded'}</div>`;
+        grid.querySelectorAll('.media-picker-item').forEach(i => i.classList.remove('selected'));
+        grid.insertBefore(newItem, grid.firstChild);
+        overlay.querySelector('#mp-confirm-btn').disabled = false;
+        newItem.addEventListener('click', () => {
+          grid.querySelectorAll('.media-picker-item').forEach(i => i.classList.remove('selected'));
+          newItem.classList.add('selected');
+          selectedUrl = url;
+          overlay.querySelector('#mp-confirm-btn').disabled = false;
+        });
+        AdminApp.showBanner('Image uploaded to media library.');
+      } catch(e) {
+        AdminApp.showBanner('Upload failed: ' + e.message, true);
+      } finally {
+        mpUploadBtn.disabled = false;
+        mpUploadBtn.textContent = '+ Upload New Image';
+      }
+    });
+
+    // Confirm selection
+    overlay.querySelector('#mp-confirm-btn').addEventListener('click', () => {
+      if (selectedUrl) {
+        onSelect(selectedUrl);
+        close();
+      }
+    });
+  },
+
   async renderBlogsView(container) {
     let blogs = [];
     try { blogs = await AdminAPI.getBlogs() || []; } catch(e) { blogs = []; }
@@ -1375,7 +1484,7 @@ const AdminApp = {
       <div class="editorial-card">
         <div class="card-header">
           <div>
-            <h2 class="card-title">Blogs & Writing</h2>
+            <h2 class="card-title">Blogs &amp; Writing</h2>
             <p class="card-subtitle">Manage technical essays, dedicated article URLs, and Draft/Published states</p>
           </div>
           <button id="new-blog-btn" class="btn btn-primary">+ Write New Article</button>
@@ -1388,6 +1497,7 @@ const AdminApp = {
           </div>
           <form id="blog-form">
             <input type="hidden" id="blog-id">
+            <input type="hidden" id="blog-featured-image-url">
             <div class="form-grid-2">
               <div class="form-group">
                 <label class="form-label" for="blog-title">Article Title *</label>
@@ -1430,9 +1540,25 @@ const AdminApp = {
               <textarea id="blog-summary" class="form-textarea" placeholder="Short editorial teaser..."></textarea>
             </div>
 
+            <!-- Featured Image -->
             <div class="form-group">
-              <label class="form-label" for="blog-content">Markdown Article Body</label>
-              <textarea id="blog-content" class="form-textarea code-area" style="min-height: 220px;" placeholder="# Heading&#10;&#10;Technical article content in Markdown format..."></textarea>
+              <label class="form-label">Featured Image <span style="color:var(--text-muted);font-size:0.8em;">(optional)</span></label>
+              <div id="blog-featured-preview" style="margin-bottom:0.75rem;"></div>
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <button type="button" id="blog-pick-featured-btn" class="btn btn-secondary btn-sm">Select from Library</button>
+                <button type="button" id="blog-remove-featured-btn" class="btn btn-danger btn-sm" style="display:none;">Remove Featured Image</button>
+              </div>
+              <p class="form-helper">Displayed above the article title on the public page.</p>
+            </div>
+
+            <!-- Markdown Editor with Insert Image toolbar -->
+            <div class="form-group">
+              <label class="form-label">Markdown Article Body</label>
+              <div class="md-toolbar">
+                <button type="button" id="blog-insert-img-btn" class="btn btn-secondary btn-sm">⬡ Insert Image at Cursor</button>
+                <span style="font-size:0.75rem; color:var(--text-muted);">Inserts ![Alt Text](url) at cursor position</span>
+              </div>
+              <textarea id="blog-content" class="form-textarea code-area" style="min-height: 260px;" placeholder="# Heading&#10;&#10;Technical article content in Markdown format..."></textarea>
             </div>
 
             <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
@@ -1467,6 +1593,21 @@ const AdminApp = {
 
     const formCard = document.getElementById('blog-form-card');
     const formTitle = document.getElementById('blog-form-title');
+    const featuredPreview = document.getElementById('blog-featured-preview');
+    const featuredUrlInput = document.getElementById('blog-featured-image-url');
+    const removeFeaturedBtn = document.getElementById('blog-remove-featured-btn');
+
+    const updateFeaturedPreview = (url) => {
+      featuredUrlInput.value = url || '';
+      if (url) {
+        featuredPreview.innerHTML = `<img src="${url}" alt="Featured Image" class="featured-img-preview">`;
+        removeFeaturedBtn.style.display = 'inline-flex';
+      } else {
+        featuredPreview.innerHTML = `<p style="color:var(--text-muted);font-size:0.85rem;">No featured image selected.</p>`;
+        removeFeaturedBtn.style.display = 'none';
+      }
+    };
+
     const openForm = (data = null) => {
       formCard.style.display = 'block';
       if (data) {
@@ -1480,6 +1621,7 @@ const AdminApp = {
         document.getElementById('blog-tags').value = data.tagsJson || '';
         document.getElementById('blog-summary').value = data.summary || '';
         document.getElementById('blog-content').value = data.contentMarkdown || '';
+        updateFeaturedPreview(data.featuredImageUrl || '');
       } else {
         formTitle.textContent = 'Write New Article';
         document.getElementById('blog-id').value = '';
@@ -1491,11 +1633,12 @@ const AdminApp = {
         document.getElementById('blog-tags').value = '';
         document.getElementById('blog-summary').value = '';
         document.getElementById('blog-content').value = '';
+        updateFeaturedPreview('');
       }
       formCard.scrollIntoView({ behavior: 'smooth' });
     };
 
-    // Auto-generate slug when title changes
+    // Auto-generate slug when title changes (only for new articles)
     document.getElementById('blog-title').addEventListener('input', (e) => {
       const slugInput = document.getElementById('blog-slug');
       if (!document.getElementById('blog-id').value) {
@@ -1506,6 +1649,32 @@ const AdminApp = {
     document.getElementById('new-blog-btn').addEventListener('click', () => openForm());
     document.getElementById('blog-cancel-btn').addEventListener('click', () => formCard.style.display = 'none');
     document.getElementById('blog-cancel-btn-2').addEventListener('click', () => formCard.style.display = 'none');
+
+    // Featured Image picker
+    document.getElementById('blog-pick-featured-btn').addEventListener('click', () => {
+      this.openMediaPicker('Select Featured Image', (url) => {
+        updateFeaturedPreview(url);
+      });
+    });
+
+    removeFeaturedBtn.addEventListener('click', () => updateFeaturedPreview(''));
+
+    // Insert Image at cursor position in Markdown editor
+    document.getElementById('blog-insert-img-btn').addEventListener('click', () => {
+      this.openMediaPicker('Insert Image into Article', (url) => {
+        const textarea = document.getElementById('blog-content');
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const before = textarea.value.substring(0, start);
+        const after = textarea.value.substring(end);
+        const imageMarkdown = `\n![Image](${url})\n`;
+        textarea.value = before + imageMarkdown + after;
+        const newPos = start + imageMarkdown.length;
+        textarea.selectionStart = newPos;
+        textarea.selectionEnd = newPos;
+        textarea.focus();
+      });
+    });
 
     container.querySelectorAll('.blog-edit-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -1541,7 +1710,8 @@ const AdminApp = {
         status: document.getElementById('blog-status').value,
         tagsJson: document.getElementById('blog-tags').value.trim(),
         summary: document.getElementById('blog-summary').value.trim(),
-        contentMarkdown: document.getElementById('blog-content').value
+        contentMarkdown: document.getElementById('blog-content').value,
+        featuredImageUrl: document.getElementById('blog-featured-image-url').value.trim() || null
       };
 
       try {
@@ -1555,18 +1725,50 @@ const AdminApp = {
   },
 
   // =========================================================================
-  // 8. MEDIA LIBRARY VIEW
+  // 8. MEDIA LIBRARY VIEW (with live usage info from server)
   // =========================================================================
   async renderMediaView(container) {
     let mediaList = [];
     try { mediaList = await AdminAPI.getMedia() || []; } catch(e) { mediaList = []; }
+
+    const renderMediaCard = (m) => {
+      const sizeKb = m.fileSize ? Math.round(m.fileSize / 1024) + ' KB' : '';
+      const usedIn = m.usedIn || [];
+      const isInUse = usedIn.length > 0;
+      const usageHtml = isInUse
+        ? `<span class="media-usage-badge">In Use (${usedIn.length})</span>
+           <div class="media-usage-list">${usedIn.map(u => `<span class="usage-item" title="${u}">↳ ${u}</span>`).join('')}</div>`
+        : `<span class="media-usage-badge unused">Unused</span>`;
+
+      return `
+        <div class="media-card" data-id="${m.id}" data-in-use="${isInUse}" data-usage="${encodeURIComponent(JSON.stringify(usedIn))}">
+          <div class="media-thumb-box">
+            <img src="${m.fileUrl}" alt="${m.fileName}" loading="lazy">
+          </div>
+          <div class="media-card-body">
+            <div class="media-filename" title="${m.fileName}">${m.fileName}</div>
+            <div class="media-meta">${sizeKb}${m.mimeType ? ' · ' + m.mimeType : ''}</div>
+            ${usageHtml}
+            <div class="media-card-actions" style="margin-top:0.5rem;">
+              <button class="btn btn-secondary btn-sm copy-url-btn" data-url="${m.fileUrl}">Copy URL</button>
+              <button class="btn ${isInUse ? 'btn-secondary' : 'btn-danger'} btn-sm del-media-btn"
+                      data-id="${m.id}"
+                      title="${isInUse ? 'Remove all references before deleting' : 'Delete from library and storage'}"
+                      style="${isInUse ? 'opacity:0.5;cursor:not-allowed;' : ''}">
+                ${isInUse ? 'In Use' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    };
 
     container.innerHTML = `
       <div class="editorial-card">
         <div class="card-header">
           <div>
             <h2 class="card-title">Media Library</h2>
-            <p class="card-subtitle">Upload and manage image assets served via /media/...</p>
+            <p class="card-subtitle">Upload and manage image assets. In-use media cannot be deleted until all references are removed.</p>
           </div>
           <div>
             <input type="file" id="media-upload-input" accept="image/*" style="display: none;">
@@ -1579,25 +1781,7 @@ const AdminApp = {
         </div>
 
         <div class="media-grid" id="media-cards-grid">
-          ${mediaList.map(m => {
-            const sizeKb = m.fileSize ? Math.round(m.fileSize / 1024) + ' KB' : '';
-            return `
-              <div class="media-card" data-id="${m.id}">
-                <div class="media-thumb-box">
-                  <img src="${m.fileUrl}" alt="${m.fileName}" loading="lazy">
-                </div>
-                <div class="media-card-body">
-                  <div class="media-filename" title="${m.fileName}">${m.fileName}</div>
-                  <div class="media-meta">${sizeKb} ${m.mimeType || ''}</div>
-                  <div class="media-card-actions">
-                    <button class="btn btn-secondary btn-sm copy-url-btn" data-url="${m.fileUrl}">Copy URL</button>
-                    <button class="btn btn-secondary btn-sm set-avatar-btn" data-url="${m.fileUrl}">Set Avatar</button>
-                    <button class="btn btn-danger btn-sm del-media-btn" data-id="${m.id}">Delete</button>
-                  </div>
-                </div>
-              </div>
-            `;
-          }).join('')}
+          ${mediaList.map(m => renderMediaCard(m)).join('')}
         </div>
       </div>
     `;
@@ -1610,10 +1794,8 @@ const AdminApp = {
     uploadInput.addEventListener('change', async () => {
       const file = uploadInput.files[0];
       if (!file) return;
-
       uploadBtn.disabled = true;
       uploadBtn.textContent = 'Uploading...';
-
       try {
         await AdminAPI.uploadMedia(file);
         AdminApp.showBanner('Image uploaded to media library.');
@@ -1636,33 +1818,159 @@ const AdminApp = {
       });
     });
 
-    container.querySelectorAll('.set-avatar-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const url = e.currentTarget.getAttribute('data-url');
-        try {
-          const profile = await AdminAPI.getProfile() || {};
-          profile.avatarUrl = url;
-          await AdminAPI.updateProfile(profile);
-          AdminApp.showBanner('Avatar updated in profile! Click Publish to apply to the public site.');
-        } catch (err) {
-          AdminApp.showBanner('Failed to update avatar: ' + err.message, true);
-        }
-      });
-    });
-
     container.querySelectorAll('.del-media-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const id = e.currentTarget.getAttribute('data-id');
-        if (confirm('Delete this media asset?')) {
-          try {
-            await AdminAPI.deleteMedia(id);
-            AdminApp.showBanner('Media file deleted.');
-            AdminApp.switchTab('media');
-          } catch (err) {
+        const card = e.currentTarget.closest('.media-card');
+        const isInUse = card.getAttribute('data-in-use') === 'true';
+
+        if (isInUse) {
+          // Decode usage from data attribute to show specific locations
+          let usageItems = [];
+          try { usageItems = JSON.parse(decodeURIComponent(card.getAttribute('data-usage') || '[]')); } catch {}
+          const locationList = usageItems.length > 0 ? '\n\nUsed in:\n• ' + usageItems.join('\n• ') : '';
+          AdminApp.showBanner(
+            'Cannot delete: media is in use. Remove all references first.' + (usageItems.length ? ' (' + usageItems[0] + (usageItems.length > 1 ? ' and ' + (usageItems.length - 1) + ' more' : '') + ')' : ''),
+            true
+          );
+          return;
+        }
+
+        if (!confirm('Permanently delete this media file from the library and storage?')) return;
+
+        try {
+          await AdminAPI.deleteMedia(id);
+          AdminApp.showBanner('Media file deleted from library and storage.');
+          AdminApp.switchTab('media');
+        } catch (err) {
+          // Handle 409 conflict from server (edge case: file was referenced between load and delete)
+          if (err.status === 409 || (err.message && err.message.includes('409'))) {
+            AdminApp.showBanner('Cannot delete: media became referenced. Reload and try again.', true);
+          } else {
             AdminApp.showBanner('Delete failed: ' + err.message, true);
           }
         }
       });
     });
+  },
+
+  // =========================================================================
+  // 9. COMMENT MANAGEMENT VIEW
+  // =========================================================================
+  async renderCommentsView(container) {
+    let allComments = [];
+    try { allComments = await AdminAPI.getComments() || []; } catch(e) { allComments = []; }
+
+    let activeTab = 'pending';
+
+    const renderComments = (tab) => {
+      activeTab = tab;
+      const filtered = tab === 'pending'
+        ? allComments.filter(c => c.status === 'PENDING')
+        : allComments.filter(c => c.status === 'APPROVED');
+
+      const formatDate = (dt) => {
+        if (!dt) return '';
+        try { return new Date(dt).toLocaleString(); } catch { return dt; }
+      };
+
+      return filtered.length === 0
+        ? `<p style="color:var(--text-muted); font-size:0.9rem; padding:1rem 0;">No ${tab} comments.</p>`
+        : filtered.map(c => `
+          <div class="comment-row" data-id="${c.id}">
+            <div class="comment-row-header">
+              <div>
+                <span class="comment-author">${c.authorName}</span>
+                <span class="comment-article-ref" style="margin-left:0.75rem;">Article ID: ${c.articleId}</span>
+              </div>
+              <div class="comment-actions">
+                ${tab === 'pending' ? `<button class="btn btn-secondary btn-sm approve-comment-btn" data-id="${c.id}">✓ Approve</button>` : ''}
+                <button class="btn btn-danger btn-sm delete-comment-btn" data-id="${c.id}">Delete</button>
+              </div>
+            </div>
+            <div class="comment-body">${c.content}</div>
+            <div class="comment-meta">${formatDate(c.createdAt)}</div>
+          </div>
+        `).join('');
+    };
+
+    const pendingCount = allComments.filter(c => c.status === 'PENDING').length;
+    const approvedCount = allComments.filter(c => c.status === 'APPROVED').length;
+
+    container.innerHTML = `
+      <div class="editorial-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Comment Management</h2>
+            <p class="card-subtitle">Review and moderate reader comments. Pending comments are private until approved.</p>
+          </div>
+        </div>
+
+        <div class="comment-tabs">
+          <button class="comment-tab-btn active" id="tab-btn-pending">
+            Pending <span style="font-family:var(--font-mono);font-size:0.78em;opacity:0.7;">(${pendingCount})</span>
+          </button>
+          <button class="comment-tab-btn" id="tab-btn-approved">
+            Approved <span style="font-family:var(--font-mono);font-size:0.78em;opacity:0.7;">(${approvedCount})</span>
+          </button>
+        </div>
+
+        <div id="comments-list-container">
+          ${renderComments('pending')}
+        </div>
+      </div>
+    `;
+
+    const listContainer = container.querySelector('#comments-list-container');
+
+    const switchCommentTab = (tab) => {
+      container.querySelectorAll('.comment-tab-btn').forEach(b => b.classList.remove('active'));
+      container.querySelector(`#tab-btn-${tab}`).classList.add('active');
+      listContainer.innerHTML = renderComments(tab);
+      bindCommentActions();
+    };
+
+    const bindCommentActions = () => {
+      listContainer.querySelectorAll('.approve-comment-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.currentTarget.getAttribute('data-id');
+          btn.disabled = true;
+          btn.textContent = 'Approving...';
+          try {
+            await AdminAPI.approveComment(id);
+            // Update local state
+            const c = allComments.find(x => x.id === id);
+            if (c) c.status = 'APPROVED';
+            AdminApp.showBanner('Comment approved and published.');
+            switchCommentTab(activeTab);
+          } catch(err) {
+            AdminApp.showBanner('Approve failed: ' + err.message, true);
+            btn.disabled = false;
+            btn.textContent = '✓ Approve';
+          }
+        });
+      });
+
+      listContainer.querySelectorAll('.delete-comment-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.currentTarget.getAttribute('data-id');
+          if (!confirm('Delete this comment permanently?')) return;
+          try {
+            await AdminAPI.deleteComment(id);
+            allComments = allComments.filter(c => c.id !== id);
+            AdminApp.showBanner('Comment deleted.');
+            switchCommentTab(activeTab);
+          } catch(err) {
+            AdminApp.showBanner('Delete failed: ' + err.message, true);
+          }
+        });
+      });
+    };
+
+    container.querySelector('#tab-btn-pending').addEventListener('click', () => switchCommentTab('pending'));
+    container.querySelector('#tab-btn-approved').addEventListener('click', () => switchCommentTab('approved'));
+
+    bindCommentActions();
   }
 };
+

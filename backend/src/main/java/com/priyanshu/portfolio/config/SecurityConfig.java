@@ -98,6 +98,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET, "/data/**", "/media/**").permitAll()
                 .requestMatchers("/api/admin/auth/login", "/api/admin/auth/check", "/api/admin/auth/csrf").permitAll()
+                .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().permitAll()
             )

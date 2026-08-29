@@ -289,12 +289,10 @@ const App = {
       if (path.startsWith('/blog/')) {
         return path.replace(/^\/blog\//, '').replace(/\/$/, '').trim();
       }
-      // Check query parameter fallback: ?blog=my-slug
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('blog')) {
         return urlParams.get('blog').trim();
       }
-      // Check hash route fallback: #blog/my-slug
       const hash = window.location.hash;
       if (hash.startsWith('#blog/')) {
         return hash.replace(/^#blog\//, '').trim();
@@ -340,6 +338,34 @@ const App = {
           const rawContent = article.contentMarkdown || article.content || article.summary || '';
           bodyContent.innerHTML = Renderer.renderMarkdown(rawContent);
         }
+
+        // Featured image
+        const featuredImgContainer = document.getElementById('article-featured-image-container');
+        const featuredImg = document.getElementById('article-featured-img');
+        if (featuredImgContainer && featuredImg) {
+          if (article.featuredImageUrl && typeof article.featuredImageUrl === 'string') {
+            const safeUrl = Renderer.sanitizeUrl(article.featuredImageUrl.trim());
+            if (safeUrl && safeUrl !== '#') {
+              featuredImg.src = safeUrl;
+              featuredImgContainer.style.display = 'block';
+            } else {
+              featuredImgContainer.style.display = 'none';
+              featuredImg.src = '';
+            }
+          } else {
+            featuredImgContainer.style.display = 'none';
+            featuredImg.src = '';
+          }
+        }
+
+        // Show comments section and load comments
+        const commentsSection = document.getElementById('article-comments-section');
+        if (commentsSection) {
+          commentsSection.style.display = 'block';
+          this.loadArticleComments(article.id, article.slug);
+          this.initCommentForm(article.id, article.slug);
+        }
+
       } else {
         // Not found / Draft state
         document.title = 'Article Not Found';
@@ -354,6 +380,12 @@ const App = {
 
         const bodyContent = document.getElementById('article-body-content');
         if (bodyContent) bodyContent.innerHTML = '<p><a href="/" class="btn-minimal">Return to Portfolio ↗</a></p>';
+
+        // Hide comments for not-found articles
+        const featuredImgContainer = document.getElementById('article-featured-image-container');
+        if (featuredImgContainer) featuredImgContainer.style.display = 'none';
+        const commentsSection = document.getElementById('article-comments-section');
+        if (commentsSection) commentsSection.style.display = 'none';
       }
 
       if (pushUrl && article) {
@@ -363,7 +395,6 @@ const App = {
           try {
             history.pushState({ blogSlug: slug }, '', targetPath);
           } catch (e) {
-            // Hash fallback if pushState path mutation is restricted
             window.location.hash = `blog/${slug}`;
           }
         }
@@ -441,6 +472,141 @@ const App = {
     // Initial routing evaluation
     routeCurrentUrl();
   },
+
+  /**
+   * Load and render approved comments + own pending comment (if token in sessionStorage)
+   */
+  async loadArticleComments(articleId, slug) {
+    const listEl = document.getElementById('article-comments-list');
+    const pendingNotice = document.getElementById('article-pending-comment-notice');
+    const pendingPreview = document.getElementById('article-pending-comment-preview');
+    if (!listEl) return;
+
+    listEl.innerHTML = '<p class="comments-loading">Loading comments...</p>';
+
+    try {
+      const token = sessionStorage.getItem(`comment_token_${slug}`);
+      const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+      const apiBase = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL : '';
+      const res = await fetch(`${apiBase}/api/public/comments/${encodeURIComponent(slug)}${tokenParam}`);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+
+      const comments = data.comments || [];
+
+      if (comments.length === 0) {
+        listEl.innerHTML = '<p class="comments-empty">No comments yet. Be the first to share your thoughts!</p>';
+      } else {
+        listEl.innerHTML = comments.map(c => `
+          <div class="comment-item">
+            <div class="comment-item-header">
+              <span class="comment-item-author">${this._escapeHtml(c.authorName)}</span>
+              <span class="comment-item-date">${this._formatCommentDate(c.createdAt)}</span>
+            </div>
+            <p class="comment-item-body">${this._escapeHtml(c.content)}</p>
+          </div>
+        `).join('');
+      }
+
+      // Show pending own comment notice if present
+      if (data.pendingOwnComment && pendingNotice && pendingPreview) {
+        pendingPreview.textContent = data.pendingOwnComment.content
+          ? (data.pendingOwnComment.content.length > 120
+              ? data.pendingOwnComment.content.substring(0, 120) + '…'
+              : data.pendingOwnComment.content)
+          : '';
+        pendingNotice.style.display = 'flex';
+      } else if (pendingNotice) {
+        pendingNotice.style.display = 'none';
+      }
+    } catch (err) {
+      listEl.innerHTML = '<p class="comments-empty">Comments could not be loaded.</p>';
+    }
+  },
+
+  /**
+   * Wire up the comment submission form
+   */
+  initCommentForm(articleId, slug) {
+    const form = document.getElementById('article-comment-form');
+    const statusEl = document.getElementById('comment-form-status');
+    const submitBtn = document.getElementById('comment-submit-btn');
+    if (!form) return;
+
+    // Remove any previous listener by cloning
+    const freshForm = form.cloneNode(true);
+    form.parentNode.replaceChild(freshForm, form);
+    const newStatusEl = freshForm.querySelector('#comment-form-status') || statusEl;
+    const newSubmitBtn = freshForm.querySelector('#comment-submit-btn') || submitBtn;
+
+    freshForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = (freshForm.querySelector('#comment-author-name') || {}).value || '';
+      const content = (freshForm.querySelector('#comment-content-text') || {}).value || '';
+
+      if (!name.trim() || !content.trim()) {
+        this._showCommentStatus(newStatusEl, 'Please fill in your name and comment.', 'error');
+        return;
+      }
+
+      newSubmitBtn.disabled = true;
+      newSubmitBtn.textContent = 'Submitting...';
+      this._showCommentStatus(newStatusEl, '', '');
+
+      try {
+        const apiBase = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL : '';
+        const res = await fetch(`${apiBase}/api/public/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ articleId, authorName: name.trim(), content: content.trim() })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          this._showCommentStatus(newStatusEl, data.error || 'Submission failed.', 'error');
+          return;
+        }
+        // Store submitter token in sessionStorage for this article
+        if (data.submitterToken) {
+          sessionStorage.setItem(`comment_token_${slug}`, data.submitterToken);
+        }
+        this._showCommentStatus(newStatusEl, 'Your comment has been submitted and is awaiting approval.', 'success');
+        freshForm.reset();
+        // Reload comments to show pending-own notice
+        await this.loadArticleComments(articleId, slug);
+      } catch (err) {
+        this._showCommentStatus(newStatusEl, 'Network error. Please try again.', 'error');
+      } finally {
+        newSubmitBtn.disabled = false;
+        newSubmitBtn.textContent = 'Post Comment →';
+      }
+    });
+  },
+
+  _showCommentStatus(el, message, type) {
+    if (!el) return;
+    el.textContent = message;
+    el.className = 'comment-form-status' + (type ? ' ' + type : '');
+    el.style.display = message ? 'block' : 'none';
+  },
+
+  _escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#x27;/g, "'");
+  },
+
+  _formatCommentDate(dt) {
+    if (!dt) return '';
+    try {
+      const d = new Date(dt);
+      return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch { return ''; }
+  },
+
 
   showGracefulErrorState() {
     const container = document.getElementById('sections-container');

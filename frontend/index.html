@@ -90,6 +90,12 @@
         <div class="article-page-nav">
           <a href="/" id="article-back-btn" class="article-back-link">← Back to Overview</a>
         </div>
+
+        <!-- Featured image — rendered above header if present -->
+        <div id="article-featured-image-container" style="display:none;">
+          <img id="article-featured-img" class="article-featured-image" src="" alt="Article featured image">
+        </div>
+
         <header class="article-page-header">
           <div class="article-page-meta">
             <span id="article-date-meta" class="article-meta-item"></span>
@@ -100,6 +106,39 @@
           <div id="article-tags-container" class="article-page-tags"></div>
         </header>
         <div id="article-body-content" class="article-page-body"></div>
+
+        <!-- Comments section -->
+        <section id="article-comments-section" class="article-comments-section">
+          <h2 class="comments-heading">Reader Comments</h2>
+
+          <!-- Pending own comment notice -->
+          <div id="article-pending-comment-notice" style="display:none;" class="pending-comment-notice">
+            <span class="pending-badge">⏳ Pending Approval</span>
+            <span id="article-pending-comment-preview" class="pending-comment-text"></span>
+          </div>
+
+          <!-- Approved comments list -->
+          <div id="article-comments-list" class="comments-list"></div>
+
+          <!-- Submit form -->
+          <div class="comment-form-wrapper">
+            <h3 class="comment-form-title">Leave a Comment</h3>
+            <form id="article-comment-form" class="comment-form" novalidate>
+              <div class="comment-form-row">
+                <div class="comment-form-field">
+                  <label class="comment-form-label" for="comment-author-name">Name *</label>
+                  <input type="text" id="comment-author-name" class="comment-form-input" maxlength="100" placeholder="Your name" required autocomplete="name">
+                </div>
+              </div>
+              <div class="comment-form-field">
+                <label class="comment-form-label" for="comment-content-text">Comment *</label>
+                <textarea id="comment-content-text" class="comment-form-textarea" maxlength="2000" rows="4" placeholder="Share your thoughts..." required></textarea>
+              </div>
+              <div id="comment-form-status" class="comment-form-status" style="display:none;"></div>
+              <button type="submit" id="comment-submit-btn" class="comment-submit-btn">Post Comment →</button>
+            </form>
+          </div>
+        </section>
       </article>
 
       <footer class="site-footer">

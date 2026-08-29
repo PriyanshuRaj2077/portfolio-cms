@@ -2,13 +2,17 @@ package com.priyanshu.portfolio.controller;
 
 import com.priyanshu.portfolio.entity.*;
 import com.priyanshu.portfolio.repository.*;
+import com.priyanshu.portfolio.service.MediaUsageReference;
+import com.priyanshu.portfolio.service.MediaUsageService;
 import com.priyanshu.portfolio.service.PublishService;
 import com.priyanshu.portfolio.service.StorageService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -22,8 +26,10 @@ public class AdminApiController {
     private final AchievementRepository achievementRepository;
     private final BlogPostRepository blogPostRepository;
     private final MediaRepository mediaRepository;
+    private final CommentRepository commentRepository;
     private final StorageService storageService;
     private final PublishService publishService;
+    private final MediaUsageService mediaUsageService;
 
     public AdminApiController(
             ProfileRepository profileRepository,
@@ -34,8 +40,10 @@ public class AdminApiController {
             AchievementRepository achievementRepository,
             BlogPostRepository blogPostRepository,
             MediaRepository mediaRepository,
+            CommentRepository commentRepository,
             StorageService storageService,
-            PublishService publishService
+            PublishService publishService,
+            MediaUsageService mediaUsageService
     ) {
         this.profileRepository = profileRepository;
         this.sectionRepository = sectionRepository;
@@ -45,8 +53,10 @@ public class AdminApiController {
         this.achievementRepository = achievementRepository;
         this.blogPostRepository = blogPostRepository;
         this.mediaRepository = mediaRepository;
+        this.commentRepository = commentRepository;
         this.storageService = storageService;
         this.publishService = publishService;
+        this.mediaUsageService = mediaUsageService;
     }
 
     // Profile
@@ -302,10 +312,58 @@ public class AdminApiController {
         return ResponseEntity.ok(Map.of("success", true));
     }
 
-    // Media Library
+    // -------------------------------------------------------------------------
+    // Comment Management (Admin)
+    // -------------------------------------------------------------------------
+
+    @GetMapping("/comments")
+    public ResponseEntity<List<CommentEntity>> getComments() {
+        return ResponseEntity.ok(commentRepository.findAllByOrderByCreatedAtDesc());
+    }
+
+    @PostMapping("/comments/{id}/approve")
+    public ResponseEntity<?> approveComment(@PathVariable String id) {
+        Optional<CommentEntity> opt = commentRepository.findById(id);
+        if (opt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        CommentEntity comment = opt.get();
+        comment.setStatus("APPROVED");
+        commentRepository.save(comment);
+        return ResponseEntity.ok(Map.of("success", true, "status", "APPROVED"));
+    }
+
+    @DeleteMapping("/comments/{id}")
+    public ResponseEntity<?> deleteComment(@PathVariable String id) {
+        if (!commentRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        commentRepository.deleteById(id);
+        return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    // -------------------------------------------------------------------------
+    // Media Library — enriched with live usage info
+    // -------------------------------------------------------------------------
+
     @GetMapping("/media")
-    public ResponseEntity<List<MediaEntity>> getMedia() {
-        return ResponseEntity.ok(mediaRepository.findAll());
+    public ResponseEntity<List<Map<String, Object>>> getMedia() {
+        List<MediaEntity> mediaList = mediaRepository.findAll();
+        List<Map<String, Object>> enriched = mediaList.stream().map(m -> {
+            List<String> usedIn = mediaUsageService.findUsages(m).stream()
+                    .map(MediaUsageReference::toString)
+                    .collect(Collectors.toList());
+            Map<String, Object> dto = new LinkedHashMap<>();
+            dto.put("id", m.getId());
+            dto.put("fileName", m.getFileName());
+            dto.put("fileUrl", m.getFileUrl());
+            dto.put("mimeType", m.getMimeType());
+            dto.put("fileSize", m.getFileSize());
+            dto.put("uploadedAt", m.getUploadedAt() != null ? m.getUploadedAt().toString() : null);
+            dto.put("usedIn", usedIn);
+            return dto;
+        }).collect(Collectors.toList());
+        return ResponseEntity.ok(enriched);
     }
 
     @PostMapping("/media/upload")
@@ -339,12 +397,30 @@ public class AdminApiController {
     @DeleteMapping("/media/{id}")
     public ResponseEntity<?> deleteMedia(@PathVariable Long id) {
         Optional<MediaEntity> mediaOpt = mediaRepository.findById(id);
-        if (mediaOpt.isPresent()) {
-            try {
-                storageService.deleteMedia(mediaOpt.get().getFileName());
-            } catch (Exception ignored) {}
-            mediaRepository.deleteById(id);
+        if (mediaOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
         }
+        MediaEntity media = mediaOpt.get();
+
+        // Check ALL content references before allowing deletion
+        List<MediaUsageReference> usages = mediaUsageService.findUsages(media);
+        if (!usages.isEmpty()) {
+            List<String> usedInLabels = usages.stream()
+                    .map(MediaUsageReference::toString)
+                    .collect(Collectors.toList());
+            Map<String, Object> conflict = new LinkedHashMap<>();
+            conflict.put("error", "Media is currently referenced and cannot be deleted. Remove all references first.");
+            conflict.put("usedIn", usedInLabels);
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(conflict);
+        }
+
+        // No references — safe to delete physically and from DB
+        try {
+            storageService.deleteMedia(media.getFileName());
+        } catch (Exception e) {
+            // Log but don't block DB record cleanup if storage delete fails
+        }
+        mediaRepository.deleteById(id);
         return ResponseEntity.ok(Map.of("success", true));
     }
 

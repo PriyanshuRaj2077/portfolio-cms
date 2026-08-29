@@ -32,4 +32,7 @@ public class BlogPostEntity {
 
     private String tagsJson;
     private String status; // DRAFT, PUBLISHED
+
+    @Column(name = "featured_image_url")
+    private String featuredImageUrl; // optional, nullable
 }
